@@ -6,26 +6,24 @@ import { Input } from "./Input";
 import { translations } from "@/constants/translations";
 
 interface ScheduleTimeProps {
-  index: number;
   time: string;
   onTimeChange: (time: string) => void;
   onRemove: () => void;
   isRemovable: boolean;
+  errors?: {
+    time?: string;
+  }
 }
 
 export const ScheduleTime: React.FC<ScheduleTimeProps> = ({
-  index,
   time,
   onTimeChange,
   onRemove,
   isRemovable,
+  errors = {}
 }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.scheduleNumber}>
-        {translations.course} {index + 1}
-      </Text>
-
       <View style={styles.scheduleRow}>
         <Input
           value={time}
@@ -42,6 +40,7 @@ export const ScheduleTime: React.FC<ScheduleTimeProps> = ({
           </TouchableOpacity>
         )}
       </View>
+      {errors.time && <Text style={styles.errorText}>{errors.time}</Text>}
     </View>
   );
 };
@@ -74,5 +73,10 @@ const styles = StyleSheet.create({
     color: colors.error,
     marginLeft: 4,
     fontWeight: "500",
+  },
+  errorText: {
+    fontSize: 12,
+    color: colors.error,
+    marginTop: 4,
   },
 });

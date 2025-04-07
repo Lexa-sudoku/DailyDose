@@ -32,16 +32,18 @@ interface MedicationState {
   schedules: MedicationSchedule[];
   intakes: MedicationIntake[];
 
+  draftSchedules: Record<string, MedicationSchedule>;
+
   // Medication CRUD
   addMedication: (
-    medication: Omit<Medication, "id" | "createdAt" | "updatedAt">,
+    medication: Omit<Medication, "id" | "createdAt" | "updatedAt">
   ) => string;
   updateMedication: (id: string, medication: Partial<Medication>) => void;
   deleteMedication: (id: string, keepHistory?: boolean) => void;
 
   // Schedule CRUD
   addSchedule: (
-    schedule: Omit<MedicationSchedule, "id" | "createdAt" | "updatedAt">,
+    schedule: Omit<MedicationSchedule, "id" | "createdAt" | "updatedAt">
   ) => string;
   updateSchedule: (id: string, schedule: Partial<MedicationSchedule>) => void;
   deleteSchedule: (id: string, keepHistory?: boolean) => void;
@@ -51,8 +53,13 @@ interface MedicationState {
     scheduleId: string,
     medicationId: string,
     date: string,
-    status: "taken" | "missed",
+    status: "taken" | "missed"
   ) => void;
+
+  // Drafts CRUD
+  addDraftSchedule: (draftSchedule: MedicationSchedule | string) => string;
+  updateDraftSchedule: (id: string, data: Partial<MedicationSchedule>) => void;
+  deleteDraftSchedule: (id: string) => void;
 
   // Queries
   getMedicationById: (id: string) => Medication | undefined;
@@ -63,16 +70,17 @@ interface MedicationState {
   getMedicationStats: (days?: number) => MedicationStats;
   getLowStockMedications: () => Medication[];
   getMedicationAdherenceByTimeRange: (
-    days: number,
+    days: number
   ) => MedicationAdherenceData[];
   getMedicationAdherenceByDay: (
-    days: number,
+    days: number
   ) => { date: string; adherenceRate: number }[];
   getIntakesForMedication: (
     medicationId: string,
-    scheduleId?: string,
+    scheduleId?: string
   ) => MedicationIntake[];
   getIntakesForSchedule: (scheduleId: string) => MedicationIntake[];
+  getDraftScheduleById: (id: string) => MedicationSchedule | undefined;
 }
 
 export const useMedicationStore = create<MedicationState>()(
@@ -81,6 +89,7 @@ export const useMedicationStore = create<MedicationState>()(
       medications: [],
       schedules: [],
       intakes: [],
+      draftSchedules: {},
 
       addMedication: (medicationData) => {
         const id = Date.now().toString();
@@ -105,7 +114,7 @@ export const useMedicationStore = create<MedicationState>()(
           medications: state.medications.map((med) =>
             med.id === id
               ? { ...med, ...medicationData, updatedAt: Date.now() }
-              : med,
+              : med
           ),
         }));
       },
@@ -117,7 +126,7 @@ export const useMedicationStore = create<MedicationState>()(
             return {
               medications: state.medications.filter((med) => med.id !== id),
               schedules: state.schedules.filter(
-                (schedule) => schedule.medicationId !== id,
+                (schedule) => schedule.medicationId !== id
               ),
             };
           }
@@ -126,10 +135,10 @@ export const useMedicationStore = create<MedicationState>()(
           return {
             medications: state.medications.filter((med) => med.id !== id),
             schedules: state.schedules.filter(
-              (schedule) => schedule.medicationId !== id,
+              (schedule) => schedule.medicationId !== id
             ),
             intakes: state.intakes.filter(
-              (intake) => intake.medicationId !== id,
+              (intake) => intake.medicationId !== id
             ),
           };
         });
@@ -145,6 +154,7 @@ export const useMedicationStore = create<MedicationState>()(
           frequency: scheduleData.frequency || "daily",
           days: scheduleData.days || [],
           dates: scheduleData.dates || [],
+          mealRelation: scheduleData.mealRelation || "no_relation",
           startDate: scheduleData.startDate || format(new Date(), "yyyy-MM-dd"),
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -162,7 +172,7 @@ export const useMedicationStore = create<MedicationState>()(
           schedules: state.schedules.map((schedule) =>
             schedule.id === id
               ? { ...schedule, ...scheduleData, updatedAt: Date.now() }
-              : schedule,
+              : schedule
           ),
         }));
       },
@@ -173,7 +183,7 @@ export const useMedicationStore = create<MedicationState>()(
           if (keepHistory) {
             return {
               schedules: state.schedules.filter(
-                (schedule) => schedule.id !== id,
+                (schedule) => schedule.id !== id
               ),
             };
           }
@@ -207,7 +217,7 @@ export const useMedicationStore = create<MedicationState>()(
         // Обновляем количество лекарства, если принято
         if (status === "taken") {
           const medication = get().medications.find(
-            (m) => m.id === medicationId,
+            (m) => m.id === medicationId
           );
           if (medication && medication.remainingQuantity > 0) {
             get().updateMedication(medicationId, {
@@ -220,7 +230,7 @@ export const useMedicationStore = create<MedicationState>()(
           // Проверяем, есть ли уже запись о приеме для этого расписания и даты
           const existingIntakeIndex = state.intakes.findIndex(
             (intake) =>
-              intake.scheduleId === scheduleId && intake.scheduledDate === date,
+              intake.scheduleId === scheduleId && intake.scheduledDate === date
           );
 
           if (existingIntakeIndex >= 0) {
@@ -239,6 +249,61 @@ export const useMedicationStore = create<MedicationState>()(
         });
       },
 
+      // todo поправить, стрингу вроде не передаем, либо использовать 
+      addDraftSchedule: (draftSchedule: MedicationSchedule | string) => {
+        const id = `draft-${Date.now()}`;
+        const timestamp = Date.now();
+
+        let draft: MedicationSchedule;
+
+        if (typeof draftSchedule === "string") {
+          // Если передается ID, ищем существующее расписание
+          const existing = get().schedules.find((s) => s.id === draftSchedule);
+          if (!existing) throw new Error("Schedule not found");
+
+          draft = {
+            ...existing,
+            id, // новый ID
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+        } else {
+          // Если передается новый объект расписания
+          draft = {
+            ...draftSchedule,
+            id, // новый ID
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+        }
+
+        set((state) => ({
+          draftSchedules: { ...state.draftSchedules, [id]: draft },
+        }));
+
+        return id;
+      },
+
+      updateDraftSchedule: (id, updates) =>
+        set((state) => ({
+          draftSchedules: {
+            ...state.draftSchedules,
+            [id]: {
+              ...state.draftSchedules[id],
+              ...updates,
+            },
+          },
+        })),
+
+      getDraftScheduleById: (id) => get().draftSchedules[id],
+
+      deleteDraftSchedule: (id) =>
+        set((state) => {
+          const copy = { ...state.draftSchedules };
+          delete copy[id];
+          return { draftSchedules: copy };
+        }),
+
       getMedicationById: (id) => {
         return get().medications.find((med) => med.id === id);
       },
@@ -249,7 +314,7 @@ export const useMedicationStore = create<MedicationState>()(
 
       getSchedulesForMedication: (medicationId) => {
         return get().schedules.filter(
-          (schedule) => schedule.medicationId === medicationId,
+          (schedule) => schedule.medicationId === medicationId
         );
       },
 
@@ -282,7 +347,7 @@ export const useMedicationStore = create<MedicationState>()(
           if (startDateObj && schedule.durationDays) {
             const calculatedEndDate = addDays(
               startDateObj,
-              schedule.durationDays,
+              schedule.durationDays
             );
             if (isAfter(dateObj, endOfDay(calculatedEndDate))) {
               return false;
@@ -319,7 +384,7 @@ export const useMedicationStore = create<MedicationState>()(
         return applicableSchedules
           .map((schedule) => {
             const medication = medications.find(
-              (med) => med.id === schedule.medicationId,
+              (med) => med.id === schedule.medicationId
             );
             if (!medication) return null;
 
@@ -327,7 +392,7 @@ export const useMedicationStore = create<MedicationState>()(
             const intake = intakes.find(
               (intake) =>
                 intake.scheduleId === schedule.id &&
-                intake.scheduledDate === date,
+                intake.scheduledDate === date
             );
 
             return {
@@ -351,16 +416,22 @@ export const useMedicationStore = create<MedicationState>()(
       getMedicationsForCalendar: (date) => {
         const result: DayMedications = {};
         const { getMedicationsByDate } = get();
-        
+
         const dateObj = parseISO(date);
-        const weekStart = startOfDay(subDays(dateObj, dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1)); // Понедельник
+        const weekStart = startOfDay(
+          subDays(dateObj, dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1)
+        ); // Понедельник
         const weekEnd = endOfDay(addDays(weekStart, 6)); // Воскресенье
-      
-        for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
+
+        for (
+          let d = new Date(weekStart);
+          d <= weekEnd;
+          d.setDate(d.getDate() + 1)
+        ) {
           const dateString = format(d, "yyyy-MM-dd");
           result[dateString] = getMedicationsByDate(dateString);
         }
-      
+
         return result;
       },
 
@@ -382,10 +453,10 @@ export const useMedicationStore = create<MedicationState>()(
 
         const total = filteredIntakes.length;
         const taken = filteredIntakes.filter(
-          (intake) => intake.status === "taken",
+          (intake) => intake.status === "taken"
         ).length;
         const missed = filteredIntakes.filter(
-          (intake) => intake.status === "missed",
+          (intake) => intake.status === "missed"
         ).length;
         const adherenceRate = total > 0 ? (taken / total) * 100 : 0;
 
@@ -399,7 +470,7 @@ export const useMedicationStore = create<MedicationState>()(
 
       getLowStockMedications: () => {
         return get().medications.filter(
-          (med) => med.remainingQuantity <= med.lowStockThreshold,
+          (med) => med.remainingQuantity <= med.lowStockThreshold
         );
       },
 
@@ -437,7 +508,7 @@ export const useMedicationStore = create<MedicationState>()(
         return Object.entries(medicationAdherence)
           .map(([medicationId, stats]) => {
             const medication = medications.find(
-              (med) => med.id === medicationId,
+              (med) => med.id === medicationId
             );
             return {
               medicationId,
@@ -463,11 +534,11 @@ export const useMedicationStore = create<MedicationState>()(
         // Вычисляем соблюдение для каждого дня
         dates.forEach((date) => {
           const dayIntakes = intakes.filter(
-            (intake) => intake.scheduledDate === date,
+            (intake) => intake.scheduledDate === date
           );
           const total = dayIntakes.length;
           const taken = dayIntakes.filter(
-            (intake) => intake.status === "taken",
+            (intake) => intake.status === "taken"
           ).length;
 
           result.push({
@@ -484,23 +555,23 @@ export const useMedicationStore = create<MedicationState>()(
           return get().intakes.filter(
             (intake) =>
               intake.medicationId === medicationId &&
-              intake.scheduleId === scheduleId,
+              intake.scheduleId === scheduleId
           );
         }
         return get().intakes.filter(
-          (intake) => intake.medicationId === medicationId,
+          (intake) => intake.medicationId === medicationId
         );
       },
 
       getIntakesForSchedule: (scheduleId) => {
         return get().intakes.filter(
-          (intake) => intake.scheduleId === scheduleId,
+          (intake) => intake.scheduleId === scheduleId
         );
       },
     }),
     {
       name: "medication-storage",
       storage: createJSONStorage(() => AsyncStorage),
-    },
-  ),
+    }
+  )
 );

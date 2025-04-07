@@ -181,7 +181,7 @@ export const translations = {
   selectAtLeastOneDate: "Выберите хотя бы одну дату",
 
   // Multiple schedules
-  addCourse: "Добавить время",
+  addCourse: "Добавить курс",
   removeCourse: "Удалить",
   course: "Курс",
 

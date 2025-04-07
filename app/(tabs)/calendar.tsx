@@ -66,7 +66,6 @@ export default function CalendarScreen() {
   const navigateToAddReminder = () => {
     router.push({
       pathname: "/reminders/add",
-      params: { date: formattedDate },
     });
   };
 

@@ -1,5 +1,4 @@
-// todo вместо длинного окна Расписание Курс 1 ... Курс 2 ... должны появиться окошки Курс 1 Курс 2  и переход к их редактированию по клику
-// добавить внутри одного курса возможность выбрать несколько штук времени 12:00 19:00
+// todo добавить внутри одного курса возможность выбрать несколько штук времени 12:00 19:00
 
 // todo кастомные кнопки назад для ios
 
@@ -17,37 +16,25 @@ import {
 } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pill, Calendar, Plus } from "lucide-react-native";
+import { Pill, Plus, Trash2 } from "lucide-react-native";
 import { colors } from "@/constants/colors";
-import { Input } from "@/components/Input";
-import { Button } from "@/components/Button";
 import { useMedicationStore } from "@/store/medication-store";
-import { MealRelation, MedicationSchedule } from "@/types";
+import { MedicationSchedule } from "@/types";
 import { translations } from "@/constants/translations";
-import { ScheduleTime } from "@/components/ScheduleTime";
-import { ScheduleFrequency } from "@/components/ScheduleFrequency";
 import { format } from "date-fns/format";
-import { addDays, parseISO } from "date-fns";
-import { DatePicker } from "@/components/DatePicker";
-import { ScheduleMealRelation } from "@/components/ScheduleMealRelation";
+import { parseISO } from "date-fns";
 
 export default function AddReminderScreen() {
   const params = useLocalSearchParams<{
     medicationId?: string;
     date?: string;
   }>();
-  const { medicationId, date } = params;
+  const { medicationId } = params;
 
-  const [selectedMedicationId] = useState<
-    string | undefined
-  >(medicationId);
-  const [schedules, setSchedules] = useState<(MedicationSchedule & { isNew?: boolean })[]
-  >([]);
+  const [selectedMedicationId] = useState<string | undefined>(medicationId);
+  const [schedules, setSchedules] = useState<MedicationSchedule[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [existingSchedulesLoaded, setExistingSchedulesLoaded] = useState(false);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
   const [durationType, setDurationType] = useState<"endDate" | "durationDays">(
     "durationDays"
   );
@@ -55,9 +42,8 @@ export default function AddReminderScreen() {
   const {
     getMedicationById,
     getSchedulesForMedication,
-    addSchedule,
-    updateSchedule,
     deleteSchedule,
+    addDraftSchedule,
   } = useMedicationStore();
 
   const selectedMedication = selectedMedicationId
@@ -98,220 +84,69 @@ export default function AddReminderScreen() {
       setIsInitialized(true);
       setExistingSchedulesLoaded(true);
     }
-  }, [selectedMedicationId, existingSchedulesLoaded, getSchedulesForMedication, isInitialized]);
+  }, [
+    selectedMedicationId,
+    existingSchedulesLoaded,
+    getSchedulesForMedication,
+    isInitialized,
+  ]);
 
-  // Устанавливаем дату, если она передана в параметрах
-  useEffect(() => {
-    if (date) {
-      setSchedules((prevSchedules) => {
-        if (prevSchedules.length === 0 || prevSchedules[0].dates?.length !== 0) {
-          return prevSchedules; // Если нет расписаний или даты уже установлены, ничего не меняем
-        }
-        const newSchedules = [...prevSchedules];
-        newSchedules[0] = { 
-          ...newSchedules[0], 
-          dates: [date], 
-          frequency: "specific_dates" 
-        };
-        return newSchedules;
-      });
-    }
-  }, [date]);
-
-  const validateForm = () => {
+  const validateMedication = () => {
     const newErrors: Record<string, string> = {};
 
     if (!selectedMedicationId) {
       newErrors.medication = translations.selectMedicationRequired;
     }
 
-    schedules.forEach((schedule, index) => {
-      if (!schedule.time.trim()) {
-        newErrors[`time_${index}`] = translations.required;
-      }
-
-      if (
-        schedule.frequency === "specific_days" &&
-        schedule.days.length === 0
-      ) {
-        newErrors[`days_${index}`] = translations.selectAtLeastOneDay;
-      }
-
-      if (
-        schedule.frequency === "specific_dates" &&
-        schedule.dates.length === 0
-      ) {
-        newErrors[`dates_${index}`] = translations.selectAtLeastOneDate;
-      }
-
-      if (!schedule.startDate) {
-        newErrors[`startDate_${index}`] = translations.required;
-      }
-
-      if (durationType === "endDate" && !schedule.endDate) {
-        newErrors[`endDate_${index}`] = translations.required;
-      }
-
-      if (
-        durationType === "durationDays" &&
-        (!schedule.durationDays || schedule.durationDays <= 0)
-      ) {
-        newErrors[`durationDays_${index}`] = translations.required;
-      }
-    });
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = () => {
-    if (!validateForm() || !selectedMedicationId) return;
-
-    // Добавляем расписания для выбранного лекарства
-    schedules.forEach((schedule) => {
-      let endDate = schedule.endDate;
-      if (durationType === "durationDays" && schedule.durationDays) {
-        const startDateObj = parseISO(schedule.startDate);
-        endDate = format(
-          addDays(startDateObj, schedule.durationDays),
-          "yyyy-MM-dd"
-        );
-      }
-
-      if (schedule.isNew) {
-        const { isNew, ...newSchedule } = schedule;
-        addSchedule({
-          ...newSchedule,
-          medicationId: selectedMedicationId,
-        });
-      } else {
-        updateSchedule(schedule.id, {
-          time: schedule.time,
-          frequency: schedule.frequency,
-          days: schedule.days,
-          dates: schedule.dates,
-          mealRelation: schedule.mealRelation,
-          startDate: schedule.startDate,
-          endDate: durationType === "endDate" ? schedule.endDate : endDate,
-          durationDays:
-            durationType === "durationDays" ? schedule.durationDays : undefined,
-        });
-      }
-    });
-
-    router.back();
   };
 
   const navigateToSelectMedication = () => {
     router.replace("/reminders/select-medication");
   };
 
-  const updateScheduleTime = (index: number, time: string) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].time = time;
-    setSchedules(newSchedules);
-  };
-
-  // const removeScheduleTime = (index: number) => {
-  // todo
-  // };
-
-  const updateScheduleFrequency = (
-    index: number,
-    frequency: "daily" | "every_other_day" | "specific_days" | "specific_dates"
-  ) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].frequency = frequency;
-    setSchedules(newSchedules);
-  };
-
-  const updateScheduleDays = (index: number, days: number[]) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].days = days;
-    setSchedules(newSchedules);
-  };
-
-  const updateScheduleDates = (index: number, dates: string[]) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].dates = dates;
-    setSchedules(newSchedules);
-  };
-
-  const updateScheduleMealRelation = (
-    index: number,
-    mealRelation: MealRelation
-  ) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].mealRelation = mealRelation;
-    setSchedules(newSchedules);
-  };
-
-  const updateScheduleStartDate = (index: number, date: string) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].startDate = date;
-    setSchedules(newSchedules);
-    setShowStartDatePicker(false);
-  };
-
-  const updateScheduleEndDate = (index: number, date: string) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].endDate = date;
-    setSchedules(newSchedules);
-    setShowEndDatePicker(false);
-  };
-
-  const updateScheduleDurationDays = (index: number, days: number) => {
-    const newSchedules = [...schedules];
-    newSchedules[index].durationDays = days;
-    setSchedules(newSchedules);
-  };
-
-  const handleOpenStartDatePicker = (index: number) => {
-    setCurrentScheduleIndex(index);
-    setShowStartDatePicker(true);
-  };
-
-  const handleOpenEndDatePicker = (index: number) => {
-    setCurrentScheduleIndex(index);
-    setShowEndDatePicker(true);
+  const goToEditSchedule = (id: string) => {
+    if (!validateMedication()) return;
+    router.replace({
+      pathname: "/reminders/edit",
+      params: { index: id },
+    });
   };
 
   const addScheduleCourse = () => {
     const timestamp = Date.now();
-    setSchedules([
-      ...schedules,
-      {
-        id: `new-${timestamp}`,
-        medicationId: `${selectedMedicationId}`,
-        frequency: "daily",
-        time: "12:00",
-        dates: [],
-        days: [],
-        mealRelation: "no_relation",
-        startDate: format(new Date(), "yyyy-MM-dd"),
-        endDate: "",
-        durationDays: 7,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        isNew: true,
-      },
-    ]);
+
+    const newSchedule: MedicationSchedule = {
+      id: `draft-${timestamp}`,
+      medicationId: `${selectedMedicationId}`,
+      frequency: "daily",
+      time: "",
+      dates: [],
+      days: [],
+      mealRelation: "no_relation",
+      startDate: format(new Date(), "yyyy-MM-dd"),
+      endDate: "",
+      durationDays: 7,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    addDraftSchedule(newSchedule);
+    
+    // Короткая задержка (один рендер-фрейм), чтобы Zustand успел обновиться
+    setTimeout(() => {
+      goToEditSchedule(newSchedule.id);
+    }, 0);
   };
 
-  // todo 
   const removeScheduleCourse = (index: number) => {
-    if (schedules.length > 1) {
-      const scheduleToRemove = schedules[index];
+    const scheduleToRemove = schedules[index];
+    deleteSchedule(scheduleToRemove.id, true);
 
-      // Если это не новое расписание, удаляем его из хранилища
-      if (!scheduleToRemove.isNew) {
-        deleteSchedule(scheduleToRemove.id);
-      }
-
-      const newSchedules = [...schedules];
-      newSchedules.splice(index, 1);
-      setSchedules(newSchedules);
-    }
+    const newSchedules = [...schedules];
+    newSchedules.splice(index, 1);
+    setSchedules(newSchedules);
   };
 
   return (
@@ -362,198 +197,43 @@ export default function AddReminderScreen() {
         </View>
 
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>{translations.schedule}</Text>
+          {schedules.map((schedule, index) => (
+            <View key={schedule.id} style={styles.courseCard}>
+              <TouchableOpacity
+                style={styles.courseContent}
+                onPress={() => goToEditSchedule(schedule.id)}
+              >
+                <Text style={styles.courseText}>
+                  {`${translations.course} ${index + 1}: ${format(
+                    parseISO(schedule.startDate),
+                    "dd.MM.yyyy"
+                  )} - ${
+                    durationType === "endDate" && schedule.endDate
+                      ? format(parseISO(schedule.endDate), "dd.MM.yyyy")
+                      : `+${schedule.durationDays} дней`
+                  }`}
+                </Text>
+              </TouchableOpacity>
 
-          {schedules.map((schedule, scheduleIndex) => (
-            <View key={scheduleIndex} style={styles.scheduleContainer}>
-              <ScheduleTime
-                index={scheduleIndex}
-                time={schedule.time}
-                onTimeChange={(time) => updateScheduleTime(scheduleIndex, time)}
-                onRemove={() => {
-                  removeScheduleCourse(scheduleIndex);
-                }}
-                isRemovable={schedules.length > 1}
-              />
-
-              <ScheduleFrequency
-                frequency={schedule.frequency}
-                days={schedule.days}
-                dates={schedule.dates}
-                onFrequencyChange={(frequency) =>
-                  updateScheduleFrequency(scheduleIndex, frequency)
-                }
-                onDaysChange={(days) => updateScheduleDays(scheduleIndex, days)}
-                onDatesChange={(dates) =>
-                  updateScheduleDates(scheduleIndex, dates)
-                }
-                errors={{
-                  days: errors[`days_${scheduleIndex}`],
-                  dates: errors[`dates_${scheduleIndex}`],
-                }}
-              />
-
-              <ScheduleMealRelation
-                mealRelation={schedule.mealRelation}
-                onMealRelationChange={(mealRelation) =>
-                  updateScheduleMealRelation(scheduleIndex, mealRelation)
-                }
-              />
-
-              {/* todo вынести duration в отдельный component, рендерить пошагово*/}
-
-              <View style={styles.durationContainer}>
-                <Text style={styles.label}>{translations.treatmentPeriod}</Text>
-
-                <View style={styles.durationTypeContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.durationTypeButton,
-                      durationType === "durationDays" &&
-                        styles.durationTypeButtonSelected,
-                    ]}
-                    onPress={() => setDurationType("durationDays")}
-                  >
-                    <Text
-                      style={[
-                        styles.durationTypeButtonText,
-                        durationType === "durationDays" &&
-                          styles.durationTypeButtonTextSelected,
-                      ]}
-                    >
-                      {translations.specifyDuration}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.durationTypeButton,
-                      durationType === "endDate" &&
-                        styles.durationTypeButtonSelected,
-                    ]}
-                    onPress={() => setDurationType("endDate")}
-                  >
-                    <Text
-                      style={[
-                        styles.durationTypeButtonText,
-                        durationType === "endDate" &&
-                          styles.durationTypeButtonTextSelected,
-                      ]}
-                    >
-                      {translations.specifyEndDate}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.dateContainer}>
-                  <Text style={styles.dateLabel}>{translations.startDate}</Text>
-                  <TouchableOpacity
-                    style={styles.dateButton}
-                    onPress={() => handleOpenStartDatePicker(scheduleIndex)}
-                  >
-                    <Calendar size={18} color={colors.primary} />
-                    <Text style={styles.dateButtonText}>
-                      {schedule.startDate || translations.selectDate}
-                    </Text>
-                  </TouchableOpacity>
-                  {errors[`startDate_${scheduleIndex}`] && (
-                    <Text style={styles.errorText}>
-                      {errors[`startDate_${scheduleIndex}`]}
-                    </Text>
-                  )}
-                </View>
-
-                {durationType === "endDate" ? (
-                  <View style={styles.dateContainer}>
-                    <Text style={styles.dateLabel}>{translations.endDate}</Text>
-                    <TouchableOpacity
-                      style={styles.dateButton}
-                      onPress={() => handleOpenEndDatePicker(scheduleIndex)}
-                    >
-                      <Calendar size={18} color={colors.primary} />
-                      <Text style={styles.dateButtonText}>
-                        {schedule.endDate || translations.selectDate}
-                      </Text>
-                    </TouchableOpacity>
-                    {errors[`endDate_${scheduleIndex}`] && (
-                      <Text style={styles.errorText}>
-                        {errors[`endDate_${scheduleIndex}`]}
-                      </Text>
-                    )}
-                  </View>
-                ) : (
-                  <View style={styles.dateContainer}>
-                    <Text style={styles.dateLabel}>
-                      {translations.durationDays}
-                    </Text>
-                    <View style={styles.durationInputContainer}>
-                      <Input
-                        value={schedule.durationDays?.toString() || ""}
-                        onChangeText={(text) => {
-                          const days = parseInt(text);
-                          if (!isNaN(days) || text === "") {
-                            updateScheduleDurationDays(
-                              scheduleIndex,
-                              days || 0
-                            );
-                          }
-                        }}
-                        keyboardType="numeric"
-                        placeholder={translations.enterDays}
-                        style={styles.durationInput}
-                      />
-                      <Text style={styles.daysText}></Text>
-                    </View>
-                    {errors[`durationDays_${scheduleIndex}`] && (
-                      <Text style={styles.errorText}>
-                        {errors[`durationDays_${scheduleIndex}`]}
-                      </Text>
-                    )}
-                  </View>
-                )}
-              </View>
+              <TouchableOpacity
+                onPress={() => removeScheduleCourse(index)}
+                style={styles.deleteButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Trash2 size={20} color={colors.error} />
+              </TouchableOpacity>
             </View>
           ))}
 
           <TouchableOpacity
-            style={styles.addTimeButton}
             onPress={addScheduleCourse}
+            style={styles.addCourseButton}
           >
             <Plus size={20} color={colors.primary} />
-            <Text style={styles.addTimeText}>{translations.addCourse}</Text>
+            <Text style={styles.addCourseText}>{translations.addCourse}</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            title={translations.saveReminder}
-            onPress={handleSave}
-            style={styles.saveButton}
-          />
-
-          <Button
-            title={translations.cancel}
-            onPress={() => router.back()}
-            variant="outline"
-          />
-        </View>
       </ScrollView>
-
-      {showStartDatePicker && (
-        <DatePicker
-          onSelect={(date) =>
-            updateScheduleStartDate(currentScheduleIndex, date)
-          }
-          onCancel={() => setShowStartDatePicker(false)}
-        />
-      )}
-
-      {showEndDatePicker && (
-        <DatePicker
-          onSelect={(date) => updateScheduleEndDate(currentScheduleIndex, date)}
-          onCancel={() => setShowEndDatePicker(false)}
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -618,37 +298,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginLeft: 12,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  mealRelationContainer: {
-    marginBottom: 8,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  mealRelationButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  mealRelationButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  mealRelationButtonText: {
-    fontSize: 14,
-    color: colors.text,
-  },
-  mealRelationButtonTextSelected: {
-    color: colors.white,
-  },
   buttonContainer: {
     marginTop: 8,
     marginBottom: 24,
@@ -668,7 +317,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  addTimeButton: {
+  addCourseButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -678,98 +327,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderStyle: "dashed",
   },
-  addTimeText: {
+  addCourseText: {
     color: colors.primary,
     fontWeight: "500",
     marginLeft: 8,
   },
-  daysContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 16,
-  },
-  dayButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  dayButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dayButtonText: {
-    fontSize: 12,
-    color: colors.text,
-  },
-  dayButtonTextSelected: {
-    color: colors.white,
-  },
-
-  durationContainer: {
-    marginTop: 16,
-  },
-  durationTypeContainer: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  durationTypeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    marginRight: 8,
-    borderRadius: 8,
-  },
-  durationTypeButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  durationTypeButtonText: {
-    fontSize: 14,
-    color: colors.text,
-  },
-  durationTypeButtonTextSelected: {
-    color: colors.white,
-  },
-  dateContainer: {
-    marginBottom: 16,
-  },
-  dateLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  dateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 12,
-  },
-  dateButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: colors.text,
-  },
-  durationInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  durationInput: {
+  courseContent: {
     flex: 1,
   },
-  daysText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: colors.textSecondary,
+  courseText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: colors.text,
+  },
+  courseCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.white,
+    marginBottom: 12,
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  deleteButton: {
+    marginLeft: 12,
+    padding: 4,
   },
 });
