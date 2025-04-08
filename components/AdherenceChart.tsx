@@ -1,129 +1,101 @@
-// todo график ломается
-
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { Dimensions, View, Text, StyleSheet, ScrollView } from "react-native";
+import { LineChart } from "react-native-chart-kit";
 import { colors } from "@/constants/colors";
+import { LinearGradient } from "expo-linear-gradient";
 
-interface AdherenceChartProps {
+interface Props {
   data: { date: string; adherenceRate: number }[];
   height?: number;
 }
 
-export const AdherenceChart: React.FC<AdherenceChartProps> = ({
-  data,
-  height = 200,
-}) => {
-  const maxValue = 100; // Максимальное значение для шкалы (100%)
-  const chartWidth = Dimensions.get("window").width - 48; // Ширина графика с учетом отступов
-  const barWidth = Math.min(
-    30,
-    (chartWidth - (data.length - 1) * 8) / data.length,
-  );
+const screenWidth = Dimensions.get("window").width;
 
-  const getBarColor = (value: number) => {
-    if (value >= 80) return colors.success;
-    if (value >= 50) return colors.warning;
-    return colors.error;
+export const AdherenceChart: React.FC<Props> = ({ data, height = 180 }) => {
+  const chartData = {
+    labels: data.map((d, i) => (i % 3 === 0 ? d.date.slice(5) : "")), // 'MM-DD'
+    datasets: [
+      {
+        data: data.map((d) => d.adherenceRate),
+        color: () => colors.primary,
+        strokeWidth: 2,
+      },
+    ],
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.getDate().toString();
-  };
+  const chartWidth = Math.max(screenWidth, data.length * 20); // ~60px на точку
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.chartContainer, { height }]}>
-        {/* Y-axis labels */}
-        <View style={styles.yAxis}>
-          <Text style={styles.axisLabel}>100%</Text>
-          <Text style={styles.axisLabel}>75%</Text>
-          <Text style={styles.axisLabel}>50%</Text>
-          <Text style={styles.axisLabel}>25%</Text>
-          <Text style={styles.axisLabel}>0%</Text>
-        </View>
-
-        {/* Chart grid */}
-        <View style={styles.chartGrid}>
-          <View style={[styles.gridLine, { top: 0 }]} />
-          <View style={[styles.gridLine, { top: "25%" }]} />
-          <View style={[styles.gridLine, { top: "50%" }]} />
-          <View style={[styles.gridLine, { top: "75%" }]} />
-          <View style={[styles.gridLine, { top: "100%" }]} />
-
-          {/* Bars */}
-          <View style={styles.barsContainer}>
-            {data.map((item, index) => (
-              <View key={index} style={styles.barItem}>
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      height: `${(item.adherenceRate / maxValue) * 100}%`,
-                      backgroundColor: getBarColor(item.adherenceRate),
-                      width: barWidth,
-                    },
-                  ]}
-                />
-                <Text style={styles.barLabel}>{formatDate(item.date)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+    <>
+      <Text style={styles.label}>Процент приёма, %</Text>
+      <View style={{ position: "relative" }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingRight: 16 }}
+        >
+          <LineChart
+            data={chartData}
+            width={chartWidth}
+            height={height}
+            chartConfig={{
+              backgroundGradientFrom: colors.white,
+              backgroundGradientTo: colors.white,
+              decimalPlaces: 0,
+              color: () => colors.primary,
+              labelColor: () => colors.textSecondary,
+              propsForDots: {
+                r: "4",
+                strokeWidth: "2",
+                stroke: colors.primary,
+              },
+            }}
+            bezier
+            style={{
+              borderRadius: 16,
+              marginLeft: -30,
+            }}
+          />
+        </ScrollView>
+        <LinearGradient
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          colors={[colors.white, "rgba(255,255,255,0)"]}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 40,
+          }}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 0 }}
+          colors={[colors.white, "rgba(255,255,255,0)"]}
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 40,
+          }}
+          pointerEvents="none"
+        />
       </View>
-    </View>
+
+      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8 }}>
+        Проведите по графику вбок →
+      </Text>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 16,
-  },
-  chartContainer: {
-    flexDirection: "row",
-  },
-  yAxis: {
-    width: 40,
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    paddingRight: 8,
-  },
-  axisLabel: {
-    fontSize: 10,
+  label: {
+    fontSize: 12,
     color: colors.textSecondary,
-  },
-  chartGrid: {
-    flex: 1,
-    position: "relative",
-  },
-  gridLine: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  barsContainer: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-end",
-    height: "100%",
-    paddingTop: 8,
-  },
-  barItem: {
-    alignItems: "center",
-  },
-  bar: {
-    position: "absolute",
-    bottom: 20, // Оставляем место для меток
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
-  barLabel: {
-    position: "absolute",
-    bottom: 0,
-    fontSize: 10,
-    color: colors.textSecondary,
+    marginBottom: 4,
   },
 });

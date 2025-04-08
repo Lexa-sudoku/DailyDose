@@ -28,7 +28,8 @@ export type MealRelation =
 export interface MedicationSchedule {
   id: string;
   medicationId: string;
-  time: string; // HH:MM format
+  times: string[]; // HH:MM format
+  dosageByTime: string;
   frequency: "daily" | "every_other_day" | "specific_days" | "specific_dates";
   days: number[]; // 1-7 (Monday-Sunday)
   dates: string[]; // YYYY-MM-DD format
@@ -41,6 +42,7 @@ export interface MedicationSchedule {
 }
 
 export interface MedicationIntake {
+  dosageByTime: string;
   id: string;
   scheduleId: string;
   medicationId: string;
@@ -49,11 +51,10 @@ export interface MedicationIntake {
   status: "taken" | "missed" | "pending";
   takenAt?: number;
   createdAt: number;
-  // medicationName: string;
-  // mealRelation: MealRelation;
-  // dosage: string;
-  // instructions: string; 
-  // todo эти данные нужны в случае, если юзер удаляет у себя препарат/курс, но хочет чтоб осталась история о приемах в журнале
+  medicationName: string;
+  mealRelation: MealRelation;
+  dosage: string;
+  instructions: string;
 }
 
 export interface DailyMedicationWithStatus {
@@ -62,7 +63,9 @@ export interface DailyMedicationWithStatus {
   medicationId: string;
   name: string;
   dosage: string;
+  dosageByTime: string;
   instructions: string;
+  times: string[];
   time: string;
   mealRelation: MealRelation;
   status: "taken" | "missed" | "pending";

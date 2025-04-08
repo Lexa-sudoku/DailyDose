@@ -8,31 +8,71 @@ import { CalendarView } from "@/components/CalendarView";
 import { MedicationCard } from "@/components/MedicationCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useMedicationStore } from "@/store/medication-store";
-import { formatDate, formatTime} from "@/utils/date-utils";
+import { formatDate, formatTime } from "@/utils/date-utils";
 import { translations } from "@/constants/translations";
 import { Button } from "@/components/Button";
+import { addDays, format } from "date-fns";
+import { DailyMedicationWithStatus } from "@/types";
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const formattedDate = formatDate(selectedDate);
 
-  const { getMedicationsByDate, getMedicationsForCalendar, recordIntake } =
-    useMedicationStore();
+  const {
+    getMedicationsByDate,
+    getMedicationsForCalendar,
+    recordIntake,
+    intakes,
+  } = useMedicationStore();
 
   const medications = getMedicationsByDate(formattedDate);
-  const sortedMedications = medications.slice().sort((a, b) => {
-    const timeA = a.time.split(":").map(Number); // Разбиваем "HH:mm" в массив чисел
-    const timeB = b.time.split(":").map(Number);
+
+  // Разбиваем каждый medication на несколько объектов, присваивая только один time
+  let parsedMeddicationsByTime = [] as DailyMedicationWithStatus[];
+
+  medications.forEach((el) => {
+    el.times?.forEach((time) => {
+      const intake = intakes.find(
+        (intake) =>
+          intake.scheduleId === el.scheduleId &&
+          intake.medicationId === el.medicationId &&
+          intake.scheduledDate === formattedDate &&
+          intake.scheduledTime === time
+      );
+
+      parsedMeddicationsByTime.push({
+        ...el,
+        time,
+        id: `${time}-${el.id}`,
+        status: intake?.status || "pending",
+        dosageByTime: intake?.dosageByTime || el.dosageByTime,
+      });
+    });
+  });
+
+  const sortedMedications = parsedMeddicationsByTime.slice()?.sort((a, b) => {
+    const timeA = a.time?.split(":").map(Number); // Разбиваем "HH:mm" в массив чисел
+    const timeB = b.time?.split(":").map(Number);
     return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]); // Сортируем по минутам с начала дня
   });
 
-  const calendarData = getMedicationsForCalendar(formattedDate);
-
   const todayMedications = sortedMedications;
 
+  const calendarData = getMedicationsForCalendar(formattedDate);
+
   // Подготавливаем отмеченные даты для календаря
-  // todo отметки приходят через getMedicationsForCalendar который получает инфу только по текущей неделе, если перейти на новую неделю, не выбрав день, отметки не отрисовываются
   const markedDates: Record<string, { marked: boolean; dotColor: string }> = {};
+
+  // на 2 недели назад и вперед
+  for (let i = -2; i <= 2; i++) {
+    const offsetDate = format(
+      addDays(new Date(formattedDate), i * 7),
+      "yyyy-MM-dd"
+    );
+    const weekData = getMedicationsForCalendar(offsetDate);
+
+    Object.assign(calendarData, weekData);
+  }
 
   Object.keys(calendarData).forEach((date) => {
     const hasMissed = calendarData[date].some((med) => med.status === "missed");
@@ -55,12 +95,20 @@ export default function CalendarScreen() {
     setSelectedDate(date);
   };
 
-  const handleMarkTaken = (scheduleId: string, medicationId: string) => {
-    recordIntake(scheduleId, medicationId, formattedDate, "taken");
+  const handleMarkTaken = (
+    scheduleId: string,
+    medicationId: string,
+    time: string
+  ) => {
+    recordIntake(scheduleId, medicationId, formattedDate, time, "taken");
   };
 
-  const handleMarkMissed = (scheduleId: string, medicationId: string) => {
-    recordIntake(scheduleId, medicationId, formattedDate, "missed");
+  const handleMarkMissed = (
+    scheduleId: string,
+    medicationId: string,
+    time: string
+  ) => {
+    recordIntake(scheduleId, medicationId, formattedDate, time, "missed");
   };
 
   const navigateToAddReminder = () => {
@@ -80,12 +128,13 @@ export default function CalendarScreen() {
         <MedicationCard
           medication={item}
           selectedDate={selectedDate}
-          onMarkTaken={() =>
-            handleMarkTaken(item.scheduleId, item.medicationId)
+          onMarkTaken={(time) =>
+            handleMarkTaken(item.scheduleId, item.medicationId, time)
           }
-          onMarkMissed={() =>
-            handleMarkMissed(item.scheduleId, item.medicationId)
+          onMarkMissed={(time) =>
+            handleMarkMissed(item.scheduleId, item.medicationId, time)
           }
+          status={item.status}
         />
       </View>
     );

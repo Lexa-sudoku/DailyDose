@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Stack, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pill, AlertCircle } from "lucide-react-native";
@@ -124,9 +119,11 @@ export default function AddMedicationScreen() {
             numberOfLines={3}
           />
 
+          <Text style={styles.label}>В наличии:</Text>
           <View style={styles.rowInputs}>
             <Input
               label={translations.totalQuantity}
+              mark="*"
               value={totalQuantity}
               onChangeText={setTotalQuantity}
               placeholder="30"
@@ -137,6 +134,7 @@ export default function AddMedicationScreen() {
 
             <Input
               label={translations.lowStockThreshold}
+              mark="*"
               value={lowStockThreshold}
               onChangeText={setLowStockThreshold}
               placeholder="5"
@@ -145,6 +143,12 @@ export default function AddMedicationScreen() {
               style={{ flex: 1, marginLeft: 8 }}
               leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
             />
+          </View>
+          <View style={styles.rowInputs}>
+            <Text style={styles.warning}>*</Text>
+            <Text>
+             {translations.measureWarn}
+            </Text>
           </View>
         </View>
 
@@ -200,5 +204,17 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginBottom: 12,
+  },
+  warning: {
+    color: colors.primary,
+    fontWeight: "700",
+    fontSize: 16,
+    marginRight: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.text,
+    marginBottom: 8,
   },
 });

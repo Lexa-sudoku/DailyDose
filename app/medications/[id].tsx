@@ -9,11 +9,7 @@ import {
 } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  Pill,
-  AlertCircle,
-  Trash2,
-} from "lucide-react-native";
+import { Pill, AlertCircle, Trash2 } from "lucide-react-native";
 import { colors } from "@/constants/colors";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
@@ -139,7 +135,7 @@ export default function EditMedicationScreen() {
             router.back();
           },
         },
-      ],
+      ]
     );
   };
 
@@ -262,7 +258,7 @@ export default function EditMedicationScreen() {
           />
 
           <Button
-            title={translations.cancel}
+            title={translations.cancelEdit}
             onPress={() => router.back()}
             variant="outline"
           />

@@ -1,8 +1,3 @@
-// todo ПЕРЕПИСАТЬ ЛОГИКУ УДАЛЕНИЯ сейчас даже при неподтвержденном удалении какого-то расписания оно стирается со всего журнала, аналогично с лекарствами
-// при удалении курса надо предложить пользователю завершить курс или снести все записи?
-
-// todo учитывать какое кол-во препарата принимается за раз и вычитать из общего кол-ва, сейчас вычитается по 1
-
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -53,11 +48,12 @@ interface MedicationState {
     scheduleId: string,
     medicationId: string,
     date: string,
+    time: string,
     status: "taken" | "missed"
   ) => void;
 
   // Drafts CRUD
-  addDraftSchedule: (draftSchedule: MedicationSchedule | string) => string;
+  addDraftSchedule: (draftSchedule: MedicationSchedule) => string;
   updateDraftSchedule: (id: string, data: Partial<MedicationSchedule>) => void;
   deleteDraftSchedule: (id: string) => void;
 
@@ -152,6 +148,8 @@ export const useMedicationStore = create<MedicationState>()(
           id,
           ...scheduleData,
           frequency: scheduleData.frequency || "daily",
+          times: scheduleData.times || [],
+          dosageByTime: scheduleData.dosageByTime || "",
           days: scheduleData.days || [],
           dates: scheduleData.dates || [],
           mealRelation: scheduleData.mealRelation || "no_relation",
@@ -196,9 +194,12 @@ export const useMedicationStore = create<MedicationState>()(
         });
       },
 
-      recordIntake: (scheduleId, medicationId, date, status) => {
+      recordIntake: (scheduleId, medicationId, date, time, status) => {
+        const medication = get().medications.find(
+          (med) => med.id === medicationId
+        );
         const schedule = get().schedules.find((s) => s.id === scheduleId);
-        if (!schedule) return;
+        if (!schedule || !medication) return;
 
         const intakeId = Date.now().toString();
         const timestamp = Date.now();
@@ -207,11 +208,16 @@ export const useMedicationStore = create<MedicationState>()(
           id: intakeId,
           scheduleId,
           medicationId,
-          scheduledTime: schedule.time,
+          scheduledTime: time,
           scheduledDate: date,
           status,
           takenAt: status === "taken" ? timestamp : undefined,
           createdAt: timestamp,
+          medicationName: medication.name,
+          mealRelation: schedule.mealRelation,
+          dosage: medication.dosage,
+          dosageByTime: schedule.dosageByTime,
+          instructions: medication.instructions,
         };
 
         // Обновляем количество лекарства, если принято
@@ -220,9 +226,14 @@ export const useMedicationStore = create<MedicationState>()(
             (m) => m.id === medicationId
           );
           if (medication && medication.remainingQuantity > 0) {
-            get().updateMedication(medicationId, {
-              remainingQuantity: medication.remainingQuantity - 1,
-            });
+            const match = schedule.dosageByTime.match(/\d+(\.\d+)?/);
+            if (match) {
+              const dosageByTimeFloat = parseFloat(match[0]);
+              get().updateMedication(medicationId, {
+                remainingQuantity:
+                  medication.remainingQuantity - dosageByTimeFloat,
+              });
+            }
           }
         }
 
@@ -230,7 +241,9 @@ export const useMedicationStore = create<MedicationState>()(
           // Проверяем, есть ли уже запись о приеме для этого расписания и даты
           const existingIntakeIndex = state.intakes.findIndex(
             (intake) =>
-              intake.scheduleId === scheduleId && intake.scheduledDate === date
+              intake.scheduleId === scheduleId &&
+              intake.scheduledDate === date &&
+              intake.scheduledTime === time
           );
 
           if (existingIntakeIndex >= 0) {
@@ -249,33 +262,17 @@ export const useMedicationStore = create<MedicationState>()(
         });
       },
 
-      // todo поправить, стрингу вроде не передаем, либо использовать 
-      addDraftSchedule: (draftSchedule: MedicationSchedule | string) => {
-        const id = `draft-${Date.now()}`;
+      addDraftSchedule: (draftSchedule: MedicationSchedule) => {
         const timestamp = Date.now();
+        const id = `draft-${draftSchedule.id}`;
 
         let draft: MedicationSchedule;
 
-        if (typeof draftSchedule === "string") {
-          // Если передается ID, ищем существующее расписание
-          const existing = get().schedules.find((s) => s.id === draftSchedule);
-          if (!existing) throw new Error("Schedule not found");
-
-          draft = {
-            ...existing,
-            id, // новый ID
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          };
-        } else {
-          // Если передается новый объект расписания
-          draft = {
-            ...draftSchedule,
-            id, // новый ID
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          };
-        }
+        draft = {
+          ...draftSchedule,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
 
         set((state) => ({
           draftSchedules: { ...state.draftSchedules, [id]: draft },
@@ -381,7 +378,7 @@ export const useMedicationStore = create<MedicationState>()(
         });
 
         // Сопоставляем расписания с лекарствами и статусом
-        return applicableSchedules
+        const results = applicableSchedules
           .map((schedule) => {
             const medication = medications.find(
               (med) => med.id === schedule.medicationId
@@ -394,15 +391,15 @@ export const useMedicationStore = create<MedicationState>()(
                 intake.scheduleId === schedule.id &&
                 intake.scheduledDate === date
             );
-
             return {
               id: `${date}-${schedule.id}`,
               scheduleId: schedule.id,
               medicationId: medication.id,
               name: medication.name,
               dosage: medication.dosage,
+              dosageByTime: schedule.dosageByTime,
               instructions: medication.instructions,
-              time: schedule.time,
+              times: schedule.times,
               mealRelation: schedule.mealRelation,
               status: intake?.status || "pending",
               takenAt: intake?.takenAt,
@@ -411,6 +408,39 @@ export const useMedicationStore = create<MedicationState>()(
             } as DailyMedicationWithStatus;
           })
           .filter(Boolean) as DailyMedicationWithStatus[];
+
+        const existingIds = new Set(
+          results.map((r) => `${r.scheduleId}-${r.medicationId}-${r.time}`)
+        );
+        const orphanIntakes = intakes.filter(
+          (intake) =>
+            intake.scheduledDate === date &&
+            !schedules.find((s) => s.id === intake.scheduleId) // удалённый schedule
+        );
+
+        orphanIntakes.forEach((intake) => {
+          const med = medications.find((m) => m.id === intake.medicationId);
+          const key = `${intake.scheduleId}-${intake.medicationId}-${intake.scheduledTime}`;
+          if (existingIds.has(key)) return;
+
+          results.push({
+            id: `${intake.scheduledTime}-${intake.scheduleId}`,
+            scheduleId: intake.scheduleId,
+            medicationId: intake.medicationId,
+            name: intake.medicationName,
+            dosage: intake.dosage,
+            dosageByTime: intake.dosageByTime,
+            instructions: intake.instructions,
+            times: [intake.scheduledTime],
+            mealRelation: intake.mealRelation,
+            status: intake.status,
+            takenAt: intake.takenAt,
+            iconName: med?.iconName,
+            iconColor: med?.iconColor,
+            time: intake.scheduledTime,
+          });
+        });
+        return results;
       },
 
       getMedicationsForCalendar: (date) => {
@@ -571,6 +601,7 @@ export const useMedicationStore = create<MedicationState>()(
     }),
     {
       name: "medication-storage",
+      version: 1, // Меняем версию, чтобы сбросить state
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

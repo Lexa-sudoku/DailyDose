@@ -16,7 +16,7 @@ interface ScheduleFrequencyProps {
   days: number[];
   dates: string[];
   onFrequencyChange: (
-    frequency: "daily" | "every_other_day" | "specific_days" | "specific_dates",
+    frequency: "daily" | "every_other_day" | "specific_days" | "specific_dates"
   ) => void;
   onDaysChange: (days: number[]) => void;
   onDatesChange: (dates: string[]) => void;
@@ -184,10 +184,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "500",
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   frequencyOptions: {
     marginBottom: 16,

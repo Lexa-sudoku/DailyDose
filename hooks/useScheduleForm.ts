@@ -1,14 +1,34 @@
 import { useState } from "react";
 import { MedicationSchedule, MealRelation } from "@/types";
 
-type FrequencyType = "daily" | "every_other_day" | "specific_days" | "specific_dates";
+type FrequencyType =
+  | "daily"
+  | "every_other_day"
+  | "specific_days"
+  | "specific_dates";
 
 export const useScheduleForm = (initialSchedule: MedicationSchedule) => {
   const [schedule, setSchedule] = useState<MedicationSchedule>(initialSchedule);
-  
 
-  const updateTime = (time: string) => {
-    setSchedule((prev) => ({ ...prev, time }));
+  const addTime = () => {
+    setSchedule((prev) => ({
+      ...prev!,
+      times: [...prev!.times, ""],
+    }));
+  };
+
+  const updateTime = (index: number, time: string) => {
+    setSchedule((prev) => ({
+      ...prev!,
+      times: prev!.times.map((t, i) => (i === index ? time : t)),
+    }));
+  };
+
+  const removeTime = (index: number) => {
+    setSchedule((prev) => ({
+      ...prev!,
+      times: prev!.times.filter((_, i) => i !== index),
+    }));
   };
 
   const updateFrequency = (frequency: FrequencyType) => {
@@ -39,10 +59,16 @@ export const useScheduleForm = (initialSchedule: MedicationSchedule) => {
     setSchedule((prev) => ({ ...prev, durationDays }));
   };
 
+  const updateDosageByTime = (dosageByTime: string) => {
+    setSchedule((prev) => ({ ...prev, dosageByTime }));
+  };
+
   return {
     schedule,
     setSchedule,
+    addTime,
     updateTime,
+    removeTime,
     updateFrequency,
     updateDays,
     updateDates,
@@ -50,5 +76,6 @@ export const useScheduleForm = (initialSchedule: MedicationSchedule) => {
     updateStartDate,
     updateEndDate,
     updateDurationDays,
+    updateDosageByTime,
   };
 };

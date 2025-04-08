@@ -1,10 +1,11 @@
 import { colors } from "@/constants/colors";
 import { translations } from "@/constants/translations";
 import { Calendar } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Input } from "./Input";
 import { DatePicker } from "./DatePicker";
+import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 
 interface ScheduleDurationProps {
   startDate: string;
@@ -15,8 +16,7 @@ interface ScheduleDurationProps {
   onDurationDaysChange: (durationDays: number) => void;
   errors?: {
     startDate?: string;
-    endDate?: string;
-    durationDays?: string;
+    duration?: string;
   };
 }
 
@@ -34,6 +34,25 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
   const [durationType, setDurationType] = useState<"endDate" | "durationDays">(
     "durationDays"
   );
+
+  useEffect(() => {
+    if (!startDate) return;
+
+    if (durationType === "durationDays" && durationDays && durationDays > 0) {
+      const newEnd = format(
+        addDays(parseISO(startDate), durationDays - 1),
+        "yyyy-MM-dd"
+      );
+      onEndDateChange(newEnd);
+    }
+
+    if (durationType === "endDate" && endDate) {
+      const diff =
+        differenceInCalendarDays(parseISO(endDate), parseISO(startDate)) + 1;
+      onDurationDaysChange(diff > 0 ? diff : 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate]);
 
   return (
     <>
@@ -107,8 +126,8 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
                 {endDate || translations.selectDate}
               </Text>
             </TouchableOpacity>
-            {errors.endDate && (
-              <Text style={styles.errorText}>{errors.endDate}</Text>
+            {errors.duration && (
+              <Text style={styles.errorText}>{errors.duration}</Text>
             )}
           </View>
         ) : (
@@ -120,7 +139,17 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
                 onChangeText={(text) => {
                   const days = parseInt(text);
                   if (!isNaN(days) || text === "") {
-                    onDurationDaysChange(days || 0);
+                    const parsedDays = days || 0;
+                    onDurationDaysChange(parsedDays);
+
+                    // изменяем EndDate вычисляя по DurationDays
+                    if (startDate && parsedDays > 0) {
+                      const calculatedEnd = format(
+                        addDays(parseISO(startDate), parsedDays - 1),
+                        "yyyy-MM-dd"
+                      );
+                      onEndDateChange(calculatedEnd);
+                    }
                   }
                 }}
                 keyboardType="numeric"
@@ -129,8 +158,8 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
               />
               <Text style={styles.daysText}></Text>
             </View>
-            {errors.durationDays && (
-              <Text style={styles.errorText}>{errors.durationDays}</Text>
+            {errors.duration && (
+              <Text style={styles.errorText}>{errors.duration}</Text>
             )}
           </View>
         )}
@@ -150,6 +179,13 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
           onSelect={(date) => {
             onEndDateChange(date);
             setShowEndDatePicker(false);
+            // изменяем DurationDays на основе EndDate
+            if (startDate) {
+              const diff =
+                differenceInCalendarDays(parseISO(date), parseISO(startDate)) +
+                1;
+              onDurationDaysChange(diff > 0 ? diff : 0);
+            }
           }}
           onCancel={() => setShowEndDatePicker(false)}
         />
@@ -175,7 +211,7 @@ const styles = StyleSheet.create({
   durationTypeButton: {
     flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
@@ -215,6 +251,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   durationInputContainer: {
+    marginBottom: -16,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -229,7 +266,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     color: colors.error,
-    marginTop: -8,
+    marginTop: 8,
     marginBottom: 16,
   },
 });

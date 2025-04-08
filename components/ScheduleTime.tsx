@@ -1,46 +1,64 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Clock, Trash2 } from "lucide-react-native";
+import { Clock, Trash2, Plus } from "lucide-react-native";
 import { colors } from "@/constants/colors";
 import { Input } from "./Input";
 import { translations } from "@/constants/translations";
 
-interface ScheduleTimeProps {
-  time: string;
-  onTimeChange: (time: string) => void;
-  onRemove: () => void;
-  isRemovable: boolean;
+interface ScheduleTimesProps {
+  times: string[];
+  onTimeChange: (index: number, newTime: string) => void;
+  onAddTime: () => void;
+  onRemoveTime: (index: number) => void;
   errors?: {
-    time?: string;
-  }
+    time?: string[];
+  };
+  isRemovable: boolean;
 }
 
-export const ScheduleTime: React.FC<ScheduleTimeProps> = ({
-  time,
+export const ScheduleTimes: React.FC<ScheduleTimesProps> = ({
+  times,
   onTimeChange,
-  onRemove,
+  onAddTime,
+  onRemoveTime,
+  errors = {},
   isRemovable,
-  errors = {}
 }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.scheduleRow}>
-        <Input
-          value={time}
-          onChangeText={onTimeChange}
-          placeholder="HH:MM"
-          leftIcon={<Clock size={20} color={colors.darkGray} />}
-          style={styles.timeInput}
-        />
+      <Text style={styles.label}>{translations.reminderTime}</Text>
 
-        {isRemovable && (
-          <TouchableOpacity style={styles.removeButton} onPress={onRemove}>
-            <Trash2 size={20} color={colors.error} />
-            <Text style={styles.removeText}>{translations.removeCourse}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      {errors.time && <Text style={styles.errorText}>{errors.time}</Text>}
+      {times.map((time, index) => (
+        <View key={index}>
+          <View style={styles.scheduleRow}>
+            <Input
+              value={time}
+              onChangeText={(text) => onTimeChange(index, text)}
+              placeholder="HH:MM"
+              leftIcon={<Clock size={20} color={colors.darkGray} />}
+              style={styles.timeInput}
+            />
+
+            {isRemovable && (
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => onRemoveTime(index)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Trash2 size={20} color={colors.error} />
+              </TouchableOpacity>
+            )}
+          </View>
+          {Array.isArray(errors.time) && errors.time[index] && (
+              <Text style={styles.errorText}>{errors.time[index]}</Text>
+            )}
+        </View>
+      ))}
+
+      <TouchableOpacity onPress={onAddTime} style={styles.addTimeButton}>
+        <Plus size={20} color={colors.primary} />
+        <Text style={styles.addTimeText}>{translations.addTime}</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -49,11 +67,11 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
   },
-  scheduleNumber: {
-    fontSize: 14,
+  label: {
+    fontSize: 16,
     fontWeight: "500",
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   scheduleRow: {
     flexDirection: "row",
@@ -61,22 +79,33 @@ const styles = StyleSheet.create({
   },
   timeInput: {
     flex: 1,
-    marginBottom: 0,
   },
   removeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: 12,
-    padding: 8,
-  },
-  removeText: {
-    color: colors.error,
-    marginLeft: 4,
-    fontWeight: "500",
+    position: "relative",
+    marginLeft: -40,
+    marginRight: 20,
+    marginBottom: 15,
   },
   errorText: {
     fontSize: 12,
     color: colors.error,
-    marginTop: 4,
+    marginBottom: 16,
+    marginLeft: 4,
+    marginTop: -8,
+  },
+  addTimeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    borderStyle: "dashed",
+  },
+  addTimeText: {
+    color: colors.primary,
+    fontWeight: "500",
+    marginLeft: 8,
   },
 });

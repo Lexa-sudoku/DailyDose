@@ -1,10 +1,6 @@
-// todo добавить внутри одного курса возможность выбрать несколько штук времени 12:00 19:00
-
 // todo кастомные кнопки назад для ios
 
 // todo когда запас лекарства исчерпан, а человек отмечает, что он его принял, надо предложить ему обновить имеющееся кол-во препарата в вкладке. там же нужно сделать удобную кнопку "пополнить запас"
-
-// todo убрать отсюда парамс, перенести их в редактирование, а не создание
 
 import React, { useState, useEffect } from "react";
 import {
@@ -13,6 +9,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -27,7 +24,6 @@ import { parseISO } from "date-fns";
 export default function AddReminderScreen() {
   const params = useLocalSearchParams<{
     medicationId?: string;
-    date?: string;
   }>();
   const { medicationId } = params;
 
@@ -61,7 +57,8 @@ export default function AddReminderScreen() {
         const formattedSchedules = existingSchedules.map((schedule) => ({
           id: schedule.id,
           medicationId: schedule.medicationId,
-          time: schedule.time,
+          times: schedule.times || [],
+          dosageByTime: schedule.dosageByTime || "",
           frequency: schedule.frequency || "daily",
           days: schedule.days || [],
           dates: schedule.dates || [],
@@ -108,10 +105,7 @@ export default function AddReminderScreen() {
 
   const goToEditSchedule = (id: string) => {
     if (!validateMedication()) return;
-    router.replace({
-      pathname: "/reminders/edit",
-      params: { index: id },
-    });
+    router.replace(`/reminders/${id}`);
   };
 
   const addScheduleCourse = () => {
@@ -121,32 +115,46 @@ export default function AddReminderScreen() {
       id: `draft-${timestamp}`,
       medicationId: `${selectedMedicationId}`,
       frequency: "daily",
-      time: "",
+      times: [''],
+      dosageByTime: "",
       dates: [],
       days: [],
       mealRelation: "no_relation",
       startDate: format(new Date(), "yyyy-MM-dd"),
       endDate: "",
-      durationDays: 7,
+      durationDays: undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
 
     addDraftSchedule(newSchedule);
-    
-    // Короткая задержка (один рендер-фрейм), чтобы Zustand успел обновиться
-    setTimeout(() => {
-      goToEditSchedule(newSchedule.id);
-    }, 0);
+    goToEditSchedule(newSchedule.id);
   };
 
-  const removeScheduleCourse = (index: number) => {
-    const scheduleToRemove = schedules[index];
-    deleteSchedule(scheduleToRemove.id, true);
+  const handleDelete = (index: number) => {
+    Alert.alert(
+      translations.deleteCourse,
+      translations.deleteCourseConfirm,
+      [
+        {
+          text: translations.cancel,
+          style: "cancel",
+        },
+        {
+          text: translations.delete,
+          style: "destructive",
+          onPress: () => {
+            const scheduleToRemove = schedules[index];
+            deleteSchedule(scheduleToRemove.id, true);
 
-    const newSchedules = [...schedules];
-    newSchedules.splice(index, 1);
-    setSchedules(newSchedules);
+            const newSchedules = [...schedules];
+            newSchedules.splice(index, 1);
+            setSchedules(newSchedules);
+            router.back();
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -204,10 +212,10 @@ export default function AddReminderScreen() {
                 onPress={() => goToEditSchedule(schedule.id)}
               >
                 <Text style={styles.courseText}>
-                  {`${translations.course} ${index + 1}: ${format(
-                    parseISO(schedule.startDate),
-                    "dd.MM.yyyy"
-                  )} - ${
+                  {`${translations.course} ${index + 1}:    `}
+                </Text>
+                <Text style={styles.courseDuration}>
+                  {`${format(parseISO(schedule.startDate), "dd.MM.yyyy")} - ${
                     durationType === "endDate" && schedule.endDate
                       ? format(parseISO(schedule.endDate), "dd.MM.yyyy")
                       : `+${schedule.durationDays} дней`
@@ -216,7 +224,7 @@ export default function AddReminderScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => removeScheduleCourse(index)}
+                onPress={() => handleDelete(index)}
                 style={styles.deleteButton}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -298,24 +306,11 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginLeft: 12,
   },
-  buttonContainer: {
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  saveButton: {
-    marginBottom: 12,
-  },
   errorText: {
     fontSize: 12,
     color: colors.error,
     marginTop: -8,
     marginBottom: 16,
-  },
-  scheduleContainer: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   addCourseButton: {
     flexDirection: "row",
@@ -333,12 +328,20 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   courseContent: {
-    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
   courseText: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
     color: colors.text,
+    marginLeft: 12,
+  },
+  courseDuration: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginLeft: 8,
+    marginTop: 1,
   },
   courseCard: {
     flexDirection: "row",

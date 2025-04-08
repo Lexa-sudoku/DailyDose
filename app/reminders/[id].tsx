@@ -1,238 +1,192 @@
-// todo НЕ ИСПОЛЬЗУЕТСЯ, НО ДОЛЖЕН - надо доработать
-
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import React, { useState } from "react";
+import { ScrollView, View, StyleSheet, Text } from "react-native";
+import { useLocalSearchParams, router, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Trash2 } from "lucide-react-native";
-import { colors } from "@/constants/colors";
-import { Button } from "@/components/Button";
 import { useMedicationStore } from "@/store/medication-store";
-import { MealRelation } from "@/types";
-import { translations } from "@/constants/translations";
-import { ScheduleTime } from "@/components/ScheduleTime";
+import { ScheduleTimes } from "@/components/ScheduleTime";
 import { ScheduleFrequency } from "@/components/ScheduleFrequency";
-import { MedicationIcon } from "@/components/MedicationIcon";
+import { ScheduleMealRelation } from "@/components/ScheduleMealRelation";
+import { ScheduleDuration } from "@/components/ScheduleDuration";
+import { Button } from "@/components/Button";
+import { colors } from "@/constants/colors";
+import { translations } from "@/constants/translations";
+import { useScheduleForm } from "@/hooks/useScheduleForm";
+import { Input } from "@/components/Input";
 
-export default function EditReminderScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function EditScheduleScreen() {
+  const { id: scheduleId } = useLocalSearchParams<{ id: string }>();
 
-  const { getScheduleById, getMedicationById, updateSchedule, deleteSchedule } =
-    useMedicationStore();
+  const [errors, setErrors] = useState<Record<string, any>>({});
+  const {
+    schedules,
+    draftSchedules,
+    updateSchedule,
+    addSchedule,
+    deleteDraftSchedule,
+  } = useMedicationStore();
+  
+  const draft = draftSchedules[`draft-${scheduleId}`];
+  const existing = schedules.find((s) => s.id === scheduleId);
 
-  const schedule = getScheduleById(id);
-  const medication = schedule
-    ? getMedicationById(schedule.medicationId)
-    : undefined;
+  const originalSchedule = draft || existing;
 
-  const [time, setTime] = useState("");
-  const [frequency, setFrequency] = useState<
-    "daily" | "every_other_day" | "specific_days" | "specific_dates"
-  >("daily");
-  const [days, setDays] = useState<number[]>([]);
-  const [dates, setDates] = useState<string[]>([]);
-  const [mealRelation, setMealRelation] = useState<MealRelation>("no_relation");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isInitialized, setIsInitialized] = useState(false);
+  const {
+    schedule,
+    addTime,
+    updateTime,
+    removeTime,
+    updateFrequency,
+    updateDays,
+    updateDates,
+    updateMealRelation,
+    updateStartDate,
+    updateEndDate,
+    updateDurationDays,
+    updateDosageByTime,
+  } = useScheduleForm(originalSchedule);
 
-  // Инициализируем данные только один раз при загрузке компонента
-  useEffect(() => {
-    if (!isInitialized && schedule) {
-      setTime(schedule.time);
-      setFrequency(schedule.frequency || "daily");
-      setDays(schedule.days || []);
-      setDates(schedule.dates || []);
-      setMealRelation(schedule.mealRelation);
-      setIsInitialized(true);
+  if (!schedule) {
+    console.log("Нет данных")
+    return
+  }
+
+  const handleSave = () => {
+    if (!validateForm()) return;
+    if (draft) {
+      const newSchedule = { ...schedule, id: scheduleId.split("-")[1] };
+      addSchedule(newSchedule); // из черновика в основной список
+      deleteDraftSchedule(scheduleId); // удаляем из черновиков
+    } else {
+      updateSchedule(scheduleId, schedule);
     }
-  }, [schedule, isInitialized]);
+    router.back();
+  };
+
+  const handleCancel = () => {
+    if (draft) {
+      deleteDraftSchedule(scheduleId); // удаляем из черновиков
+    }
+    router.back();
+  };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, any> = {};
+    const timeErrors: string[] = [];
 
-    if (!time.trim()) {
-      newErrors.time = translations.required;
+    const timeRegex = /^(?:[0-9]|1[0-9]|2[0-3]):[0-5]\d$/; // формат HH:MM (24ч)
+
+    schedule.times.forEach((el, index) => {
+      if (!el) {
+        timeErrors[index] = translations.required;
+      } else if (!timeRegex.test(el)) {
+        timeErrors[index] = translations.invalidTimeFormat;
+      }
+    });
+
+    if (timeErrors.length) {
+      newErrors.time = timeErrors;
     }
 
-    if (frequency === "specific_days" && days.length === 0) {
-      newErrors.days = translations.selectAtLeastOneDay;
+    if (schedule.dosageByTime === "") {
+      newErrors[`dosage`] = translations.required;
     }
 
-    if (frequency === "specific_dates" && dates.length === 0) {
-      newErrors.dates = translations.selectAtLeastOneDate;
+    if (schedule.frequency === "specific_days" && schedule.days.length === 0) {
+      newErrors[`days`] = translations.selectAtLeastOneDay;
+    }
+
+    if (schedule.dosageByTime === undefined) {
+      newErrors[`dosage`] = translations.required;
+    }
+
+    if (
+      schedule.frequency === "specific_dates" &&
+      schedule.dates.length === 0
+    ) {
+      newErrors[`dates`] = translations.selectAtLeastOneDate;
+    }
+
+    if (!schedule.startDate) {
+      newErrors[`startDate`] = translations.required;
+    }
+
+    if (!schedule.durationDays && !schedule.endDate) {
+      newErrors[`duration`] = translations.required;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  const handleUpdate = () => {
-    if (!validateForm() || !schedule) return;
-
-    updateSchedule(id, {
-      time,
-      frequency,
-      days,
-      dates,
-      mealRelation,
-    });
-
-    router.back();
-  };
-
-  const handleDelete = () => {
-    Alert.alert(
-      translations.deleteReminder,
-      translations.deleteReminderConfirm,
-      [
-        {
-          text: translations.cancel,
-          style: "cancel",
-        },
-        {
-          text: translations.delete,
-          style: "destructive",
-          onPress: () => {
-            deleteSchedule(id);
-            router.back();
-          },
-        },
-      ],
-    );
-  };
-
-  const mealRelationOptions: { value: MealRelation; label: string }[] = [
-    { value: "before_meal", label: translations.beforeMeal },
-    { value: "with_meal", label: translations.withMeal },
-    { value: "after_meal", label: translations.afterMeal },
-    { value: "no_relation", label: translations.noMealRelation },
-  ];
-
-  if (!schedule || !medication) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: translations.editReminder }} />
-        <View style={styles.centerContainer}>
-          <Text>Напоминание не найдено</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!isInitialized) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: translations.editReminder }} />
-        <View style={styles.centerContainer}>
-          <Text>Загрузка...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <Stack.Screen
-        options={{
-          title: translations.editReminder,
-          headerBackTitle: translations.back,
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={handleDelete}
-              style={styles.deleteButton}
-            >
-              <Trash2 size={20} color={colors.error} />
-            </TouchableOpacity>
-          ),
-        }}
-      />
+      <Stack.Screen options={{ title: `${translations.course}` }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>{translations.medication}</Text>
+        <ScheduleTimes
+          times={schedule.times}
+          onAddTime={addTime}
+          onTimeChange={(index, time) => updateTime(index, time)}
+          onRemoveTime={(index) => removeTime(index)}
+          isRemovable={schedule.times.length > 1}
+          errors={{ time: errors.time }}
+        />
+        <Text style={styles.label}>{translations.dosage}</Text>
+        <Input
+          label={""}
+          value={
+            schedule.dosageByTime !== undefined ? schedule.dosageByTime : ""
+          }
+          onChangeText={(text) => {
+            updateDosageByTime(text);
+          }}
+          placeholder="1 таблетка   ||   20 мг   ||   4 укола   ||    ..."
+          error={errors[`dosage`]}
+        />
 
-          <View style={styles.medicationInfo}>
-            <View style={styles.medicationIcon}>
-              <MedicationIcon
-                iconName={medication.iconName || "Pill"}
-                color={medication.iconColor || colors.primary}
-                size={24}
-              />
-            </View>
-            <View>
-              <Text style={styles.medicationName}>{medication.name}</Text>
-              <Text style={styles.medicationDosage}>{medication.dosage}</Text>
-            </View>
-          </View>
-        </View>
+        <ScheduleFrequency
+          frequency={schedule.frequency}
+          days={schedule.days}
+          dates={schedule.dates}
+          onFrequencyChange={(frequency) => updateFrequency(frequency)}
+          onDaysChange={(days) => updateDays(days)}
+          onDatesChange={(dates) => updateDates(dates)}
+          errors={{
+            days: errors[`days`],
+            dates: errors[`dates`],
+          }}
+        />
 
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>{translations.schedule}</Text>
+        <ScheduleMealRelation
+          mealRelation={schedule.mealRelation}
+          onMealRelationChange={(meal) => updateMealRelation(meal)}
+        />
 
-          <ScheduleTime
-            index={0}
-            time={time}
-            onTimeChange={setTime}
-            onRemove={() => {}}
-            isRemovable={false}
-          />
-
-          <ScheduleFrequency
-            frequency={frequency}
-            days={days}
-            dates={dates}
-            onFrequencyChange={setFrequency}
-            onDaysChange={setDays}
-            onDatesChange={setDates}
-            errors={{
-              days: errors.days,
-              dates: errors.dates,
-            }}
-          />
-
-          <Text style={styles.label}>{translations.mealRelation}</Text>
-          <View style={styles.mealRelationContainer}>
-            {mealRelationOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.mealRelationButton,
-                  mealRelation === option.value &&
-                    styles.mealRelationButtonSelected,
-                ]}
-                onPress={() => setMealRelation(option.value)}
-              >
-                <Text
-                  style={[
-                    styles.mealRelationButtonText,
-                    mealRelation === option.value &&
-                      styles.mealRelationButtonTextSelected,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <ScheduleDuration
+          startDate={schedule.startDate}
+          endDate={schedule.endDate}
+          durationDays={schedule.durationDays}
+          onStartDateChange={(start) => updateStartDate(start)}
+          onEndDateChange={(end) => updateEndDate(end)}
+          onDurationDaysChange={(days) => updateDurationDays(days)}
+          errors={{
+            startDate: errors[`startDate`],
+            duration: errors[`duration`],
+          }}
+        />
 
         <View style={styles.buttonContainer}>
           <Button
-            title={translations.updateReminder}
-            onPress={handleUpdate}
+            title={translations.saveReminder}
+            onPress={() => {
+              handleSave();
+            }}
             style={styles.saveButton}
           />
-
           <Button
-            title={translations.cancel}
-            onPress={() => router.back()}
+            title={translations.cancelEdit}
+            onPress={() => {
+              handleCancel();
+            }}
             variant="outline"
           />
         </View>
@@ -246,90 +200,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  centerContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   scrollContent: {
     padding: 16,
-  },
-  formSection: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  medicationInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  medicationIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.lightGray,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
-  },
-  medicationName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  medicationDosage: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.text,
-    marginBottom: 8,
-  },
-  mealRelationContainer: {
-    marginBottom: 16,
-  },
-  mealRelationButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  mealRelationButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  mealRelationButtonText: {
-    fontSize: 14,
-    color: colors.text,
-  },
-  mealRelationButtonTextSelected: {
-    color: colors.white,
+    marginVertical: 12,
   },
   buttonContainer: {
-    marginTop: 8,
-    marginBottom: 24,
+    marginTop: 16,
   },
   saveButton: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  deleteButton: {
-    padding: 8,
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: colors.text,
+    marginBottom: 12,
   },
 });

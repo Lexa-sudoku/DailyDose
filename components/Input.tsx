@@ -13,6 +13,7 @@ import { colors } from "@/constants/colors";
 
 interface InputProps {
   label?: string;
+  mark?: string;
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
@@ -31,6 +32,7 @@ interface InputProps {
 
 export const Input: React.FC<InputProps> = ({
   label,
+  mark,
   value,
   onChangeText,
   placeholder,
@@ -54,7 +56,12 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={styles.label}>
+          {label}
+          {mark && <Text style={styles.mark}>{mark}</Text>}
+        </Text>
+      )}
 
       <View
         style={[
@@ -156,7 +163,7 @@ const styles = StyleSheet.create({
   },
   inputMultiline: {
     height: undefined,
-    minHeight: 100,
+    minHeight: 70,
     paddingTop: 12,
     paddingBottom: 12,
   },
@@ -168,5 +175,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.error,
     marginTop: 4,
+  },
+  mark: {
+    color: colors.primary,
+    fontWeight: "700",
+    fontSize: 16,
+    marginLeft: 8,
   },
 });

@@ -12,8 +12,9 @@ import { LinearGradient } from "expo-linear-gradient";
 interface MedicationCardProps {
   selectedDate: Date;
   medication: DailyMedicationWithStatus;
-  onMarkTaken: () => void;
-  onMarkMissed: () => void;
+  onMarkTaken: (time: string) => void;
+  onMarkMissed: (time: string) => void;
+  status: string;
 }
 
 export const MedicationCard: React.FC<MedicationCardProps> = ({
@@ -21,16 +22,16 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   medication,
   onMarkTaken,
   onMarkMissed,
+  status,
 }) => {
   const {
     name,
-    dosage,
     time,
     mealRelation,
-    status,
     iconName,
     iconColor,
     instructions,
+    dosageByTime,
   } = medication;
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -73,12 +74,12 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   };
 
   const handleMarkTaken = () => {
-    onMarkTaken();
+    onMarkTaken(time);
     setModalVisible(false);
   };
 
   const handleMarkMissed = () => {
-    onMarkMissed();
+    onMarkMissed(time);
     setModalVisible(false);
   };
 
@@ -104,7 +105,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
               <View>
                 <Text style={styles.medicationName}>{name}</Text>
                 <Text style={styles.dosage}>
-                  {dosage + ", " + getMealRelationText(mealRelation)}
+                  {dosageByTime + ", " + getMealRelationText(mealRelation)}
                 </Text>
               </View>
             </View>
@@ -129,7 +130,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
               />
               <View style={styles.modalHeaderText}>
                 <Text style={styles.modalTitle}>{name}</Text>
-                <Text style={styles.modalSubtitle}>{dosage}</Text>
+                <Text style={styles.modalSubtitle}>{dosageByTime}</Text>
               </View>
             </View>
 

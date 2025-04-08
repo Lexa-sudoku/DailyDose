@@ -61,10 +61,10 @@ export const translations = {
   medicationName: "Название лекарства",
   dosage: "Дозировка",
   instructions: "Инструкции",
-  instructionsOptional: "Инструкции (необязательно)",
-  totalQuantity: "Общее количество",
+  instructionsOptional: "Инструкции -- опционально",
+  totalQuantity: "Общее количество ",
   remainingQuantity: "Осталось",
-  lowStockThreshold: "Порог низкого запаса",
+  lowStockThreshold: "Пора пополнить при ",
   schedule: "Расписание",
   time: "Время",
   days: "Дни недели",
@@ -86,7 +86,8 @@ export const translations = {
   // Reminders
   addReminder: "Добавить напоминание",
   editReminder: "Редактировать напоминание",
-  selectMedication: "Выбрать лекарство",
+  selectMedication: "Выберите лекарство",
+  selectCourse: "Выберите курс",
   selectMedicationRequired: "Необходимо выбрать лекарство",
   tapToSelectMedication: "Нажмите, чтобы выбрать лекарство",
   saveReminder: "Сохранить напоминание",
@@ -109,8 +110,11 @@ export const translations = {
   noMedicationsFound: "Лекарства не найдены",
   noMedicationsAddedYet: "Вы еще не добавили ни одного лекарства",
   addNewMedication: "Добавить новое лекарство",
-  existingSchedulesFound: "Найдены существующие расписания",
-  existingSchedulesFoundDesc: "",
+  cancelEdit: "Отменить изменения",
+  deleteCourse: "Удалить курс",
+  deleteCourseConfirm:
+    "Вы уверены, что хотите удалить этот курс? Это действие нельзя отменить.",
+  invalidTimeFormat: "Неверный формат времени",
 
   // Medication card
   take: "Принять",
@@ -184,6 +188,7 @@ export const translations = {
   addCourse: "Добавить курс",
   removeCourse: "Удалить",
   course: "Курс",
+  addTime: "Добавить время",
 
   // Onboarding
   next: "Далее",
@@ -261,4 +266,6 @@ export const translations = {
   endDate: "Дата окончания",
   durationDays: "Продолжительность (дней)",
   enterDays: "Введите количество дней",
+  measureWarn:
+    "Используйте те же единицы измерения, в каких будет вычисляться Ваша разовая доза",
 };
