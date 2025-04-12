@@ -24,6 +24,7 @@ export const colors = {
   error: "#FF6B6B",
   success: "#5AC8A0",
   warning: "#FFBE0B",
+  waiting: "#D0D5DD",
 
   // Оттенки серого
   lightGray: "#F0F2F5",

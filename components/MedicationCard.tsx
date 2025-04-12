@@ -54,7 +54,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
       case "missed":
         return colors.error;
       default:
-        return colors.warning;
+        return colors.waiting;
     }
   };
 
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: 16,
-    marginBottom: 12,
+    marginVertical: 12,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,

@@ -260,7 +260,7 @@ export const translations = {
   createNew: "Создать новое",
   editExisting: "Редактировать существующее",
   treatmentPeriod: "Период лечения",
-  specifyDuration: "Указать продолжительность",
+  specifyDuration: "Указать длину курса",
   specifyEndDate: "Указать конечную дату",
   startDate: "Дата начала",
   endDate: "Дата окончания",

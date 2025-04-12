@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { ScrollView, View, StyleSheet, Text } from "react-native";
-import { useLocalSearchParams, router, Stack } from "expo-router";
+import { View, StyleSheet, Text } from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMedicationStore } from "@/store/medication-store";
 import { ScheduleTimes } from "@/components/ScheduleTime";
@@ -12,6 +12,7 @@ import { colors } from "@/constants/colors";
 import { translations } from "@/constants/translations";
 import { useScheduleForm } from "@/hooks/useScheduleForm";
 import { Input } from "@/components/Input";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function EditScheduleScreen() {
   const { id: scheduleId } = useLocalSearchParams<{ id: string }>();
@@ -24,7 +25,7 @@ export default function EditScheduleScreen() {
     addSchedule,
     deleteDraftSchedule,
   } = useMedicationStore();
-  
+
   const draft = draftSchedules[`draft-${scheduleId}`];
   const existing = schedules.find((s) => s.id === scheduleId);
 
@@ -46,8 +47,8 @@ export default function EditScheduleScreen() {
   } = useScheduleForm(originalSchedule);
 
   if (!schedule) {
-    console.log("Нет данных")
-    return
+    console.log("Нет данных");
+    return;
   }
 
   const handleSave = () => {
@@ -119,61 +120,66 @@ export default function EditScheduleScreen() {
   };
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <Stack.Screen options={{ title: `${translations.course}` }} />
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        enableOnAndroid
+        extraScrollHeight={10}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.formSection}>
+          <ScheduleTimes
+            times={schedule.times}
+            onAddTime={addTime}
+            onTimeChange={(index, time) => updateTime(index, time)}
+            onRemoveTime={(index) => removeTime(index)}
+            isRemovable={schedule.times.length > 1}
+            errors={{ time: errors.time }}
+          />
+          <Text style={styles.label}>{translations.dosage}</Text>
+          <Input
+            label={""}
+            value={
+              schedule.dosageByTime !== undefined ? schedule.dosageByTime : ""
+            }
+            onChangeText={(text) => {
+              updateDosageByTime(text);
+            }}
+            placeholder="1 таблетка   ||   20 мг   ||   4 укола   ||    ..."
+            error={errors[`dosage`]}
+          />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ScheduleTimes
-          times={schedule.times}
-          onAddTime={addTime}
-          onTimeChange={(index, time) => updateTime(index, time)}
-          onRemoveTime={(index) => removeTime(index)}
-          isRemovable={schedule.times.length > 1}
-          errors={{ time: errors.time }}
-        />
-        <Text style={styles.label}>{translations.dosage}</Text>
-        <Input
-          label={""}
-          value={
-            schedule.dosageByTime !== undefined ? schedule.dosageByTime : ""
-          }
-          onChangeText={(text) => {
-            updateDosageByTime(text);
-          }}
-          placeholder="1 таблетка   ||   20 мг   ||   4 укола   ||    ..."
-          error={errors[`dosage`]}
-        />
+          <ScheduleFrequency
+            frequency={schedule.frequency}
+            days={schedule.days}
+            dates={schedule.dates}
+            onFrequencyChange={(frequency) => updateFrequency(frequency)}
+            onDaysChange={(days) => updateDays(days)}
+            onDatesChange={(dates) => updateDates(dates)}
+            errors={{
+              days: errors[`days`],
+              dates: errors[`dates`],
+            }}
+          />
 
-        <ScheduleFrequency
-          frequency={schedule.frequency}
-          days={schedule.days}
-          dates={schedule.dates}
-          onFrequencyChange={(frequency) => updateFrequency(frequency)}
-          onDaysChange={(days) => updateDays(days)}
-          onDatesChange={(dates) => updateDates(dates)}
-          errors={{
-            days: errors[`days`],
-            dates: errors[`dates`],
-          }}
-        />
+          <ScheduleMealRelation
+            mealRelation={schedule.mealRelation}
+            onMealRelationChange={(meal) => updateMealRelation(meal)}
+          />
 
-        <ScheduleMealRelation
-          mealRelation={schedule.mealRelation}
-          onMealRelationChange={(meal) => updateMealRelation(meal)}
-        />
-
-        <ScheduleDuration
-          startDate={schedule.startDate}
-          endDate={schedule.endDate}
-          durationDays={schedule.durationDays}
-          onStartDateChange={(start) => updateStartDate(start)}
-          onEndDateChange={(end) => updateEndDate(end)}
-          onDurationDaysChange={(days) => updateDurationDays(days)}
-          errors={{
-            startDate: errors[`startDate`],
-            duration: errors[`duration`],
-          }}
-        />
-
+          <ScheduleDuration
+            startDate={schedule.startDate}
+            endDate={schedule.endDate}
+            durationDays={schedule.durationDays}
+            onStartDateChange={(start) => updateStartDate(start)}
+            onEndDateChange={(end) => updateEndDate(end)}
+            onDurationDaysChange={(days) => updateDurationDays(days)}
+            errors={{
+              startDate: errors[`startDate`],
+              duration: errors[`duration`],
+            }}
+          />
+        </View>
         <View style={styles.buttonContainer}>
           <Button
             title={translations.saveReminder}
@@ -190,7 +196,7 @@ export default function EditScheduleScreen() {
             variant="outline"
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -202,6 +208,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    flexGrow: 1,
+  },
+  formSection: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
@@ -209,10 +227,11 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   buttonContainer: {
-    marginTop: 16,
+    marginTop: 8,
+    marginBottom: 24,
   },
   saveButton: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   label: {
     fontSize: 16,

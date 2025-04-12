@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    paddingLeft: 8,
   },
   monthYear: {
     fontSize: 18,
@@ -148,6 +149,7 @@ const styles = StyleSheet.create({
   daysContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    flex: 1,
   },
   dayButton: {
     alignItems: "center",

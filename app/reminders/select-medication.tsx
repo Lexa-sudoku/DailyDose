@@ -73,7 +73,6 @@ export default function SelectMedicationScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       <Stack.Screen
         options={{
-          title: translations.selectMedication,
           headerRight: () => (
             <Button
               title={translations.add}
@@ -112,6 +111,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
+    height: 82,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,

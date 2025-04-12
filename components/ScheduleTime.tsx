@@ -37,6 +37,7 @@ export const ScheduleTimes: React.FC<ScheduleTimesProps> = ({
               placeholder="HH:MM"
               leftIcon={<Clock size={20} color={colors.darkGray} />}
               style={styles.timeInput}
+              // error={errors.time[index]}
             />
 
             {isRemovable && (
@@ -76,6 +77,7 @@ const styles = StyleSheet.create({
   scheduleRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: -8,
   },
   timeInput: {
     flex: 1,
@@ -89,9 +91,9 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     color: colors.error,
-    marginBottom: 16,
+    marginBottom: 8,
     marginLeft: 4,
-    marginTop: -8,
+    marginTop: -4,
   },
   addTimeButton: {
     flexDirection: "row",

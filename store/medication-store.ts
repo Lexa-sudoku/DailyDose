@@ -62,6 +62,9 @@ interface MedicationState {
   getScheduleById: (id: string) => MedicationSchedule | undefined;
   getSchedulesForMedication: (medicationId: string) => MedicationSchedule[];
   getMedicationsByDate: (date: string) => DailyMedicationWithStatus[];
+  getMedicationsByDateSlplittedByTime: (
+    date: string
+  ) => DailyMedicationWithStatus[];
   getMedicationsForCalendar: (date: string) => DayMedications;
   getMedicationStats: (days?: number) => MedicationStats;
   getLowStockMedications: () => Medication[];
@@ -443,9 +446,37 @@ export const useMedicationStore = create<MedicationState>()(
         return results;
       },
 
+      getMedicationsByDateSlplittedByTime: (date) => {
+        const result = [] as DailyMedicationWithStatus[];
+
+        const { getMedicationsByDate, intakes } = get();
+        const medications = getMedicationsByDate(date);
+
+        medications.forEach((el) => {
+          el.times?.forEach((time) => {
+            const intake = intakes.find(
+              (intake) =>
+                intake.scheduleId === el.scheduleId &&
+                intake.medicationId === el.medicationId &&
+                intake.scheduledDate === date &&
+                intake.scheduledTime === time
+            );
+
+            result.push({
+              ...el,
+              time,
+              id: `${time}-${el.id}`,
+              status: intake?.status || "pending",
+              dosageByTime: intake?.dosageByTime || el.dosageByTime,
+            });
+          });
+        });
+        return result;
+      },
+
       getMedicationsForCalendar: (date) => {
         const result: DayMedications = {};
-        const { getMedicationsByDate } = get();
+        const { getMedicationsByDateSlplittedByTime } = get();
 
         const dateObj = parseISO(date);
         const weekStart = startOfDay(
@@ -459,7 +490,7 @@ export const useMedicationStore = create<MedicationState>()(
           d.setDate(d.getDate() + 1)
         ) {
           const dateString = format(d, "yyyy-MM-dd");
-          result[dateString] = getMedicationsByDate(dateString);
+          result[dateString] = getMedicationsByDateSlplittedByTime(dateString);
         }
 
         return result;

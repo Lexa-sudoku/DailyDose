@@ -155,12 +155,11 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
                 keyboardType="numeric"
                 placeholder={translations.enterDays}
                 style={styles.durationInput}
+                accessoryViewID="duration"
+                error={errors.duration}
               />
               <Text style={styles.daysText}></Text>
             </View>
-            {errors.duration && (
-              <Text style={styles.errorText}>{errors.duration}</Text>
-            )}
           </View>
         )}
       </View>
@@ -214,7 +213,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: "center",
+    alignItems: "flex-start",
     marginRight: 8,
     borderRadius: 8,
   },
@@ -267,6 +266,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.error,
     marginTop: 8,
-    marginBottom: 16,
   },
 });

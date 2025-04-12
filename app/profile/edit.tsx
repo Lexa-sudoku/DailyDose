@@ -3,9 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +13,7 @@ import { Button } from "@/components/Button";
 import { useAuthStore } from "@/store/auth-store";
 import { translations } from "@/constants/translations";
 import { ProfilePhoto } from "@/components/ProfilePhoto";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function EditProfileScreen() {
   const { user, updateProfile, updatePassword, updatePhoto, isLoading } =
@@ -94,93 +92,94 @@ export default function EditProfileScreen() {
   return (
     <>
       <SafeAreaView style={styles.container} edges={[]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardAvoidingView}
+        <KeyboardAwareScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          enableOnAndroid
+          extraScrollHeight={10}
+          keyboardShouldPersistTaps="handled"
         >
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            <ProfilePhoto
-              photoUrl={user?.photoUrl}
-              onPhotoSelected={handlePhotoSelected}
+          <ProfilePhoto
+            photoUrl={user?.photoUrl}
+            onPhotoSelected={handlePhotoSelected}
+          />
+
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>
+              {translations.editYourProfile}
+            </Text>
+
+            <Input
+              label={translations.name}
+              value={name}
+              onChangeText={setName}
+              placeholder="Иван Иванов"
+              autoCapitalize="words"
+              error={errors.name}
+              leftIcon={<User size={20} color={colors.darkGray} />}
             />
 
-            <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>
-                {translations.editYourProfile}
-              </Text>
+            <Input
+              label={translations.email}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="example@mail.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={errors.email}
+              leftIcon={<Mail size={20} color={colors.darkGray} />}
+            />
+          </View>
 
-              <Input
-                label={translations.name}
-                value={name}
-                onChangeText={setName}
-                placeholder="Иван Иванов"
-                autoCapitalize="words"
-                error={errors.name}
-                leftIcon={<User size={20} color={colors.darkGray} />}
-              />
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>{translations.password}</Text>
 
-              <Input
-                label={translations.email}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="example@mail.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                error={errors.email}
-                leftIcon={<Mail size={20} color={colors.darkGray} />}
-              />
-            </View>
+            <Input
+              label={translations.currentPassword}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="••••••"
+              secureTextEntry
+              error={errors.currentPassword}
+              leftIcon={<Lock size={20} color={colors.darkGray} />}
+            />
 
-            <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>{translations.password}</Text>
+            <Input
+              label={translations.newPassword}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="••••••"
+              secureTextEntry
+              error={errors.newPassword}
+              leftIcon={<Lock size={20} color={colors.darkGray} />}
+            />
 
-              <Input
-                label={translations.currentPassword}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                placeholder="••••••"
-                secureTextEntry
-                error={errors.currentPassword}
-                leftIcon={<Lock size={20} color={colors.darkGray} />}
-              />
+            <Input
+              label={translations.confirmPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="••••••"
+              secureTextEntry
+              error={errors.confirmPassword}
+              leftIcon={<Lock size={20} color={colors.darkGray} />}
+            />
+          </View>
 
-              <Input
-                label={translations.newPassword}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="••••••"
-                secureTextEntry
-                error={errors.newPassword}
-                leftIcon={<Lock size={20} color={colors.darkGray} />}
-              />
+          <View style={styles.buttonContainer}>
+            <Button
+              title={translations.updateProfile}
+              onPress={handleUpdateProfile}
+              loading={isLoading}
+              style={styles.updateButton}
+            />
 
-              <Input
-                label={translations.confirmPassword}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="••••••"
-                secureTextEntry
-                error={errors.confirmPassword}
-                leftIcon={<Lock size={20} color={colors.darkGray} />}
-              />
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <Button
-                title={translations.updateProfile}
-                onPress={handleUpdateProfile}
-                loading={isLoading}
-                style={styles.updateButton}
-              />
-
-              <Button
-                title={translations.cancel}
-                onPress={() => router.back()}
-                variant="outline"
-              />
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            <Button
+              title={translations.cancel}
+              onPress={() => router.back()}
+              variant="outline"
+            />
+          </View>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </>
   );
@@ -191,11 +190,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
   scrollContent: {
     padding: 16,
+    flexGrow: 1,
   },
   formSection: {
     backgroundColor: colors.white,

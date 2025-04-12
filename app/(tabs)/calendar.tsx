@@ -12,51 +12,25 @@ import { formatDate, formatTime } from "@/utils/date-utils";
 import { translations } from "@/constants/translations";
 import { Button } from "@/components/Button";
 import { addDays, format } from "date-fns";
-import { DailyMedicationWithStatus } from "@/types";
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const formattedDate = formatDate(selectedDate);
 
   const {
-    getMedicationsByDate,
+    getMedicationsByDateSlplittedByTime,
     getMedicationsForCalendar,
     recordIntake,
-    intakes,
   } = useMedicationStore();
 
-  const medications = getMedicationsByDate(formattedDate);
-
-  // Разбиваем каждый medication на несколько объектов, присваивая только один time
-  let parsedMeddicationsByTime = [] as DailyMedicationWithStatus[];
-
-  medications.forEach((el) => {
-    el.times?.forEach((time) => {
-      const intake = intakes.find(
-        (intake) =>
-          intake.scheduleId === el.scheduleId &&
-          intake.medicationId === el.medicationId &&
-          intake.scheduledDate === formattedDate &&
-          intake.scheduledTime === time
-      );
-
-      parsedMeddicationsByTime.push({
-        ...el,
-        time,
-        id: `${time}-${el.id}`,
-        status: intake?.status || "pending",
-        dosageByTime: intake?.dosageByTime || el.dosageByTime,
-      });
-    });
-  });
+  const parsedMeddicationsByTime =
+    getMedicationsByDateSlplittedByTime(formattedDate);
 
   const sortedMedications = parsedMeddicationsByTime.slice()?.sort((a, b) => {
     const timeA = a.time?.split(":").map(Number); // Разбиваем "HH:mm" в массив чисел
     const timeB = b.time?.split(":").map(Number);
     return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]); // Сортируем по минутам с начала дня
   });
-
-  const todayMedications = sortedMedications;
 
   const calendarData = getMedicationsForCalendar(formattedDate);
 
@@ -83,7 +57,7 @@ export default function CalendarScreen() {
       markedDates[date] = {
         marked: true,
         dotColor: hasPending
-          ? colors.warning
+          ? colors.waiting
           : hasMissed
             ? colors.error
             : colors.success,
@@ -120,7 +94,7 @@ export default function CalendarScreen() {
   const renderItem = ({ item, index }: { item: any; index: number }) => {
     // Совпадающее время приема отображается только перед первой карточкой
     const showTime =
-      index === 0 || item.time !== todayMedications[index - 1].time;
+      index === 0 || item.time !== sortedMedications[index - 1].time;
     return (
       <View>
         {showTime && <Text style={styles.time}>{formatTime(item.time)}</Text>}
@@ -196,7 +170,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.primary,
-    marginBottom: 16,
     textAlign: "center",
   },
 });

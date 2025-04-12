@@ -7,9 +7,15 @@ import {
   TouchableOpacity,
   ViewStyle,
   TextStyle,
+  Button,
+  Keyboard,
+  Platform,
+  InputAccessoryView,
 } from "react-native";
 import { Eye, EyeOff } from "lucide-react-native";
 import { colors } from "@/constants/colors";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 
 interface InputProps {
   label?: string;
@@ -28,6 +34,7 @@ interface InputProps {
   inputStyle?: TextStyle;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  accessoryViewID?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -47,6 +54,7 @@ export const Input: React.FC<InputProps> = ({
   inputStyle,
   leftIcon,
   rightIcon,
+  accessoryViewID = undefined,
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -55,65 +63,128 @@ export const Input: React.FC<InputProps> = ({
   };
 
   return (
-    <View style={[styles.container, style]}>
-      {label && (
-        <Text style={styles.label}>
-          {label}
-          {mark && <Text style={styles.mark}>{mark}</Text>}
-        </Text>
-      )}
+    <SafeAreaProvider>
+      <SafeAreaView edges={[]}>
+        <View style={[styles.container, style]}>
+          {label && (
+            <Text style={styles.label}>
+              {label}
+              {mark && <Text style={styles.mark}>{mark}</Text>}
+            </Text>
+          )}
 
-      <View
-        style={[
-          styles.inputContainer,
-          error && styles.inputError,
-          disabled && styles.inputDisabled,
-          multiline && styles.inputMultiline,
-        ]}
-      >
-        {leftIcon && <View style={styles.leftIconContainer}>{leftIcon}</View>}
-
-        {/* todo поправить ошибку, но не критично, не влияет */}
-        <TextInput
-          style={[
-            styles.input,
-            leftIcon && styles.inputWithLeftIcon,
-            (rightIcon || secureTextEntry) && styles.inputWithRightIcon,
-            multiline && styles.textMultiline,
-            inputStyle,
-          ]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.darkGray}
-          secureTextEntry={secureTextEntry && !isPasswordVisible}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          editable={!disabled}
-          multiline={multiline}
-          numberOfLines={multiline ? numberOfLines : 1}
-        />
-
-        {secureTextEntry ? (
-          <TouchableOpacity
-            style={styles.rightIconContainer}
-            onPress={togglePasswordVisibility}
+          <View
+            style={[
+              styles.inputContainer,
+              error && styles.inputError,
+              disabled && styles.inputDisabled,
+              multiline && styles.inputMultiline,
+            ]}
           >
-            {isPasswordVisible ? (
-              <EyeOff size={20} color={colors.darkGray} />
-            ) : (
-              <Eye size={20} color={colors.darkGray} />
+            {leftIcon && (
+              <View style={styles.leftIconContainer}>{leftIcon}</View>
             )}
-          </TouchableOpacity>
-        ) : (
-          rightIcon && (
-            <View style={styles.rightIconContainer}>{rightIcon}</View>
-          )
-        )}
-      </View>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
-    </View>
+            {/* todo поправить ошибку, но не критично, не влияет */}
+            <TextInput
+              style={[
+                styles.input,
+                leftIcon && styles.inputWithLeftIcon,
+                (rightIcon || secureTextEntry) && styles.inputWithRightIcon,
+                multiline && styles.textMultiline,
+                inputStyle,
+              ]}
+              value={value}
+              onChangeText={onChangeText}
+              placeholder={placeholder}
+              placeholderTextColor={colors.darkGray}
+              secureTextEntry={secureTextEntry && !isPasswordVisible}
+              keyboardType={keyboardType}
+              autoCapitalize={autoCapitalize}
+              editable={!disabled}
+              multiline={multiline}
+              numberOfLines={multiline ? numberOfLines : 1}
+              inputAccessoryViewID={accessoryViewID || null}
+            />
+            {secureTextEntry ? (
+              <TouchableOpacity
+                style={styles.rightIconContainer}
+                onPress={togglePasswordVisibility}
+              >
+                {isPasswordVisible ? (
+                  <EyeOff size={20} color={colors.darkGray} />
+                ) : (
+                  <Eye size={20} color={colors.darkGray} />
+                )}
+              </TouchableOpacity>
+            ) : (
+              rightIcon && (
+                <View style={styles.rightIconContainer}>{rightIcon}</View>
+              )
+            )}
+          </View>
+
+          {error && <Text style={styles.errorText}>{error}</Text>}
+        </View>
+      </SafeAreaView>
+      
+      {/* кастомная кнопка "Готово" для клавиатуры ios */}
+      {Platform.OS === "ios" && accessoryViewID && (
+        <InputAccessoryView nativeID={accessoryViewID}>
+          <View
+            style={{
+              height: 40,
+              alignItems: "flex-end",
+              flexDirection: "row",
+              justifyContent: "flex-end",
+            }}
+          >
+            <View
+              style={{
+                width: 20,
+                height: 20,
+              }}
+            >
+              <Svg width="100%" height="100%" viewBox="0 0 100 100">
+                <Path
+                  d="M100 0 Q 100 100 0 100 L 100 100 Z"
+                  fill={colors.mediumGray}
+                />
+              </Svg>
+            </View>
+            <View
+              style={{
+                backgroundColor: colors.mediumGray,
+                alignItems: "flex-end",
+                borderWidth: 1,
+                borderColor: colors.mediumGray,
+                borderTopEndRadius: 10,
+                borderTopStartRadius: 10,
+              }}
+            >
+              <Button
+                onPress={Keyboard.dismiss}
+                title="Готово"
+                color={colors.white}
+              />
+            </View>
+            <View
+              style={{
+                width: 20,
+                height: 20,
+              }}
+            >
+              <Svg width="100%" height="100%" viewBox="0 0 100 100">
+                <Path
+                  d="M0,0 Q0,100 100,100 L0,100 Z"
+                  fill={colors.mediumGray}
+                />
+              </Svg>
+            </View>
+          </View>
+        </InputAccessoryView>
+      )}
+    </SafeAreaProvider>
   );
 };
 

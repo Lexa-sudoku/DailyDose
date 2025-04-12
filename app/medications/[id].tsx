@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pill, AlertCircle, Trash2 } from "lucide-react-native";
@@ -16,6 +9,7 @@ import { Button } from "@/components/Button";
 import { useMedicationStore } from "@/store/medication-store";
 import { translations } from "@/constants/translations";
 import { IconSelector } from "@/components/IconSelector";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function EditMedicationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -165,8 +159,6 @@ export default function EditMedicationScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       <Stack.Screen
         options={{
-          title: translations.editMedication,
-          headerBackTitle: translations.back,
           headerRight: () => (
             <TouchableOpacity
               onPress={handleDelete}
@@ -178,7 +170,13 @@ export default function EditMedicationScreen() {
         }}
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        enableOnAndroid
+        extraScrollHeight={10}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>
             {translations.medicationDetails}
@@ -215,6 +213,7 @@ export default function EditMedicationScreen() {
             placeholder="Принимать с водой"
             multiline
             numberOfLines={3}
+            accessoryViewID="instructionsEdit"
           />
 
           <View style={styles.rowInputs}>
@@ -226,6 +225,7 @@ export default function EditMedicationScreen() {
               keyboardType="numeric"
               error={errors.totalQuantity}
               style={{ flex: 1, marginRight: 8 }}
+              accessoryViewID="totalQuantityEdit"
             />
 
             <Input
@@ -236,6 +236,7 @@ export default function EditMedicationScreen() {
               keyboardType="numeric"
               error={errors.remainingQuantity}
               style={{ flex: 1, marginLeft: 8 }}
+              accessoryViewID="remainingQuantityEdit"
             />
           </View>
 
@@ -247,6 +248,7 @@ export default function EditMedicationScreen() {
             keyboardType="numeric"
             error={errors.lowStockThreshold}
             leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
+            accessoryViewID="lowStockThresholdEdit"
           />
         </View>
 
@@ -263,7 +265,7 @@ export default function EditMedicationScreen() {
             variant="outline"
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -280,6 +282,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    flexGrow: 1,
   },
   formSection: {
     backgroundColor: colors.white,

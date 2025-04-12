@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pill, Plus, Trash2 } from "lucide-react-native";
 import { colors } from "@/constants/colors";
@@ -115,7 +115,7 @@ export default function AddReminderScreen() {
       id: `draft-${timestamp}`,
       medicationId: `${selectedMedicationId}`,
       frequency: "daily",
-      times: [''],
+      times: [""],
       dosageByTime: "",
       dates: [],
       days: [],
@@ -132,40 +132,29 @@ export default function AddReminderScreen() {
   };
 
   const handleDelete = (index: number) => {
-    Alert.alert(
-      translations.deleteCourse,
-      translations.deleteCourseConfirm,
-      [
-        {
-          text: translations.cancel,
-          style: "cancel",
-        },
-        {
-          text: translations.delete,
-          style: "destructive",
-          onPress: () => {
-            const scheduleToRemove = schedules[index];
-            deleteSchedule(scheduleToRemove.id, true);
+    Alert.alert(translations.deleteCourse, translations.deleteCourseConfirm, [
+      {
+        text: translations.cancel,
+        style: "cancel",
+      },
+      {
+        text: translations.delete,
+        style: "destructive",
+        onPress: () => {
+          const scheduleToRemove = schedules[index];
+          deleteSchedule(scheduleToRemove.id, true);
 
-            const newSchedules = [...schedules];
-            newSchedules.splice(index, 1);
-            setSchedules(newSchedules);
-            router.back();
-          },
+          const newSchedules = [...schedules];
+          newSchedules.splice(index, 1);
+          setSchedules(newSchedules);
+          router.back();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <Stack.Screen
-        options={{
-          title: translations.addReminder,
-          headerBackTitle: translations.back,
-        }}
-      />
-
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>

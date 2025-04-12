@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { Stack, router } from "expo-router";
+import { View, Text, StyleSheet } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pill, AlertCircle } from "lucide-react-native";
 import { colors } from "@/constants/colors";
@@ -73,14 +74,13 @@ export default function AddMedicationScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <Stack.Screen
-        options={{
-          title: translations.addMedication,
-          headerBackTitle: translations.back,
-        }}
-      />
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        enableOnAndroid
+        extraScrollHeight={10}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>
             {translations.medicationDetails}
@@ -117,6 +117,7 @@ export default function AddMedicationScreen() {
             placeholder="Принимать с водой"
             multiline
             numberOfLines={3}
+            accessoryViewID="instructions"
           />
 
           <Text style={styles.label}>В наличии:</Text>
@@ -130,6 +131,7 @@ export default function AddMedicationScreen() {
               keyboardType="numeric"
               error={errors.totalQuantity}
               style={{ flex: 1, marginRight: 8 }}
+              accessoryViewID="totalQuantity"
             />
 
             <Input
@@ -142,13 +144,12 @@ export default function AddMedicationScreen() {
               error={errors.lowStockThreshold}
               style={{ flex: 1, marginLeft: 8 }}
               leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
+              accessoryViewID="lowStockThreshold"
             />
           </View>
           <View style={styles.rowInputs}>
-            <Text style={styles.warning}>*</Text>
-            <Text>
-             {translations.measureWarn}
-            </Text>
+            <Text style={styles.hint}>*</Text>
+            <Text>{translations.measureWarn}</Text>
           </View>
         </View>
 
@@ -165,7 +166,7 @@ export default function AddMedicationScreen() {
             variant="outline"
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -177,6 +178,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    flexGrow: 1,
   },
   formSection: {
     backgroundColor: colors.white,
@@ -205,7 +207,7 @@ const styles = StyleSheet.create({
   saveButton: {
     marginBottom: 12,
   },
-  warning: {
+  hint: {
     color: colors.primary,
     fontWeight: "700",
     fontSize: 16,
