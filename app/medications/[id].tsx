@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Switch,
+} from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pill, AlertCircle, Trash2 } from "lucide-react-native";
+import { AlertCircle, Trash2 } from "lucide-react-native";
 import { colors } from "@/constants/colors";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
@@ -10,22 +17,26 @@ import { useMedicationStore } from "@/store/medication-store";
 import { translations } from "@/constants/translations";
 import { IconSelector } from "@/components/IconSelector";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import {
+  MedicationForm,
+  MedicationForms,
+  UnitsByForm,
+} from "@/constants/medication";
+import { Picker } from "@react-native-picker/picker";
 
 export default function EditMedicationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const {
-    getMedicationById,
-    getSchedulesForMedication,
-    updateMedication,
-    deleteMedication,
-  } = useMedicationStore();
+  const { getMedicationById, updateMedication, deleteMedication } =
+    useMedicationStore();
 
   const medication = getMedicationById(id);
-  const medicationSchedules = getSchedulesForMedication(id);
 
   const [name, setName] = useState("");
+  const [form, setForm] = useState<MedicationForm>("tablet");
+  const [trackStock, setTrackStock] = useState(false);
   const [dosage, setDosage] = useState("");
+  const [unit, setUnit] = useState(UnitsByForm[form][0]);
   const [instructions, setInstructions] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [remainingQuantity, setRemainingQuantity] = useState("");
@@ -37,9 +48,12 @@ export default function EditMedicationScreen() {
 
   // Инициализируем данные только один раз при загрузке компонента
   useEffect(() => {
-    if (!isInitialized && medication && medicationSchedules) {
+    if (!isInitialized && medication) {
       setName(medication.name);
-      setDosage(medication.dosage);
+      setForm(medication.form);
+      setTrackStock(medication.trackStock);
+      setDosage(medication.dosage || "");
+      setUnit(medication.unit);
       setInstructions(medication.instructions);
       setTotalQuantity(medication.totalQuantity.toString());
       setRemainingQuantity(medication.remainingQuantity.toString());
@@ -49,7 +63,8 @@ export default function EditMedicationScreen() {
 
       setIsInitialized(true);
     }
-  }, [medication, medicationSchedules, isInitialized]);
+    setUnit(UnitsByForm[form][0]);
+  }, [medication, isInitialized, form]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -58,38 +73,35 @@ export default function EditMedicationScreen() {
       newErrors.name = translations.required;
     }
 
-    if (!dosage.trim()) {
-      newErrors.dosage = translations.required;
-    }
+    if (trackStock) {
+      if (!totalQuantity.trim()) {
+        newErrors.totalQuantity = translations.required;
+      } else if (isNaN(Number(totalQuantity)) || Number(totalQuantity) <= 0) {
+        newErrors.totalQuantity = translations.invalidQuantity;
+      }
 
-    if (!totalQuantity.trim()) {
-      newErrors.totalQuantity = translations.required;
-    } else if (isNaN(Number(totalQuantity)) || Number(totalQuantity) <= 0) {
-      newErrors.totalQuantity = translations.invalidQuantity;
-    }
+      if (!remainingQuantity.trim()) {
+        newErrors.remainingQuantity = translations.required;
+      } else if (
+        isNaN(Number(remainingQuantity)) ||
+        Number(remainingQuantity) < 0
+      ) {
+        newErrors.remainingQuantity = translations.invalidQuantity;
+      } else if (Number(remainingQuantity) > Number(totalQuantity)) {
+        newErrors.remainingQuantity = translations.remainingTooHigh;
+      }
 
-    if (!remainingQuantity.trim()) {
-      newErrors.remainingQuantity = translations.required;
-    } else if (
-      isNaN(Number(remainingQuantity)) ||
-      Number(remainingQuantity) < 0
-    ) {
-      newErrors.remainingQuantity = translations.invalidQuantity;
-    } else if (Number(remainingQuantity) > Number(totalQuantity)) {
-      newErrors.remainingQuantity = translations.remainingTooHigh;
+      if (!lowStockThreshold.trim()) {
+        newErrors.lowStockThreshold = translations.required;
+      } else if (
+        isNaN(Number(lowStockThreshold)) ||
+        Number(lowStockThreshold) < 0
+      ) {
+        newErrors.lowStockThreshold = translations.invalidQuantity;
+      } else if (Number(lowStockThreshold) >= Number(totalQuantity)) {
+        newErrors.lowStockThreshold = translations.thresholdTooHigh;
+      }
     }
-
-    if (!lowStockThreshold.trim()) {
-      newErrors.lowStockThreshold = translations.required;
-    } else if (
-      isNaN(Number(lowStockThreshold)) ||
-      Number(lowStockThreshold) < 0
-    ) {
-      newErrors.lowStockThreshold = translations.invalidQuantity;
-    } else if (Number(lowStockThreshold) >= Number(totalQuantity)) {
-      newErrors.lowStockThreshold = translations.thresholdTooHigh;
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -97,14 +109,16 @@ export default function EditMedicationScreen() {
   const handleUpdate = () => {
     if (!validateForm()) return;
 
-    // Обновляем лекарство
     updateMedication(id, {
       name,
+      form,
       dosage,
+      unit,
       instructions,
       totalQuantity: Number(totalQuantity),
       remainingQuantity: Number(remainingQuantity),
       lowStockThreshold: Number(lowStockThreshold),
+      trackStock,
       iconName: selectedIcon,
       iconColor: selectedIconColor,
     });
@@ -138,7 +152,7 @@ export default function EditMedicationScreen() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: translations.editMedication }} />
         <View style={styles.centerContainer}>
-          <Text>Лекарство не найдено</Text>
+          <Text>{translations.noMedicationsFound}</Text>
         </View>
       </SafeAreaView>
     );
@@ -149,7 +163,7 @@ export default function EditMedicationScreen() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: translations.editMedication }} />
         <View style={styles.centerContainer}>
-          <Text>Загрузка...</Text>
+          <Text>{translations.loading}...</Text>
         </View>
       </SafeAreaView>
     );
@@ -187,6 +201,7 @@ export default function EditMedicationScreen() {
             selectedColor={selectedIconColor}
             onSelectIcon={setSelectedIcon}
             onSelectColor={setSelectedIconColor}
+            variant="edit"
           />
 
           <Input
@@ -195,19 +210,35 @@ export default function EditMedicationScreen() {
             onChangeText={setName}
             placeholder="Парацетамол"
             error={errors.name}
-            leftIcon={<Pill size={20} color={colors.darkGray} />}
           />
 
-          <Input
-            label={translations.dosage}
-            value={dosage}
-            onChangeText={setDosage}
-            placeholder="500 мг, 1 таблетка"
-            error={errors.dosage}
-          />
+          <Text style={[styles.label, { marginBottom: 8 }]}>{translations.medicationForm}</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={form}
+              onValueChange={(value) => setForm(value)}
+              style={styles.picker}
+            >
+              {Object.entries(MedicationForms).map(([key, label]) => (
+                <Picker.Item key={key} label={label} value={key} />
+              ))}
+            </Picker>
+          </View>
+
+          {(form === "tablet" || form === "capsule") && (
+            <Input
+              label={`${translations.valuePerUnit} ${unit.slice(0, -1)}е`}
+              desc={`  ${translations.optional}`}
+              value={dosage}
+              onChangeText={setDosage}
+              placeholder="20 мг"
+              error={errors.dosage}
+            />
+          )}
 
           <Input
-            label={translations.instructionsOptional}
+            label={translations.instructions}
+            desc={`  ${translations.optional}`}
             value={instructions}
             onChangeText={setInstructions}
             placeholder="Принимать с водой"
@@ -216,40 +247,74 @@ export default function EditMedicationScreen() {
             accessoryViewID="instructionsEdit"
           />
 
-          <View style={styles.rowInputs}>
-            <Input
-              label={translations.totalQuantity}
-              value={totalQuantity}
-              onChangeText={setTotalQuantity}
-              placeholder="30"
-              keyboardType="numeric"
-              error={errors.totalQuantity}
-              style={{ flex: 1, marginRight: 8 }}
-              accessoryViewID="totalQuantityEdit"
-            />
-
-            <Input
-              label={translations.remainingQuantity}
-              value={remainingQuantity}
-              onChangeText={setRemainingQuantity}
-              placeholder="25"
-              keyboardType="numeric"
-              error={errors.remainingQuantity}
-              style={{ flex: 1, marginLeft: 8 }}
-              accessoryViewID="remainingQuantityEdit"
+          <View style={styles.trackRow}>
+            <Text style={styles.label}>Отслеживание наличия:</Text>
+            <Switch
+              value={trackStock}
+              onValueChange={() =>
+                setTrackStock((previousState) => !previousState)
+              }
+              trackColor={{
+                false: colors.lightGray,
+                true: colors.primary + "50",
+              }}
+              thumbColor={trackStock ? colors.primary : colors.mediumGray}
             />
           </View>
 
-          <Input
-            label={translations.lowStockThreshold}
-            value={lowStockThreshold}
-            onChangeText={setLowStockThreshold}
-            placeholder="5"
-            keyboardType="numeric"
-            error={errors.lowStockThreshold}
-            leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
-            accessoryViewID="lowStockThresholdEdit"
-          />
+          {trackStock && (
+            <>
+              <View style={styles.rowInputs}>
+                <Input
+                  label={translations.totalQuantity}
+                  value={totalQuantity}
+                  onChangeText={(text) =>
+                    setTotalQuantity(text.replace(",", "."))
+                  }
+                  placeholder="30"
+                  keyboardType="numeric"
+                  error={errors.totalQuantity}
+                  style={{ flex: 1, marginRight: 8 }}
+                  accessoryViewID="totalQuantityEdit"
+                  rightIcon={
+                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                  }
+                />
+
+                <Input
+                  label={translations.remainingQuantity}
+                  value={remainingQuantity}
+                  onChangeText={(text) =>
+                    setRemainingQuantity(text.replace(",", "."))
+                  }
+                  placeholder="25"
+                  keyboardType="numeric"
+                  error={errors.remainingQuantity}
+                  style={{ flex: 1, marginLeft: 8 }}
+                  accessoryViewID="remainingQuantityEdit"
+                  rightIcon={
+                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                  }
+                />
+              </View>
+
+              <Input
+                label={translations.lowStockThreshold}
+                value={lowStockThreshold}
+                onChangeText={(text) =>
+                  setLowStockThreshold(text.replace(",", "."))
+                }
+                placeholder="5"
+                keyboardType="numeric"
+                error={errors.lowStockThreshold}
+                leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
+                accessoryViewID="lowStockThresholdEdit"
+                rightIcon={
+                  <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                }
+              />
+            </>
+          )}
         </View>
 
         <View style={styles.buttonContainer}>
@@ -302,13 +367,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   rowInputs: {
+    marginTop: 18,
     flexDirection: "row",
   },
   label: {
     fontSize: 14,
     fontWeight: "500",
     color: colors.text,
-    marginBottom: 8,
   },
   daysContainer: {
     flexDirection: "row",
@@ -395,5 +460,25 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: "500",
     marginLeft: 8,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 16,
+  },
+  picker: {
+    height: 100,
+    width: "100%",
+    justifyContent: "center",
+  },
+  trackRow: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    height: 40,
   },
 });

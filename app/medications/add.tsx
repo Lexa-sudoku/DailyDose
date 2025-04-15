@@ -1,19 +1,43 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Pill, AlertCircle } from "lucide-react-native";
-import { colors } from "@/constants/colors";
+import React, { useRef, useState, useEffect } from "react";
+import {
+  Animated,
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  KeyboardAvoidingView,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Picker } from "@react-native-picker/picker";
+import { useRouter } from "expo-router";
+import {
+  MedicationForm,
+  MedicationForms,
+  UnitsByForm,
+} from "@/constants/medication";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
-import { useMedicationStore } from "@/store/medication-store";
+import { colors } from "@/constants/colors";
+import { AlertCircle } from "lucide-react-native";
 import { translations } from "@/constants/translations";
+import { useMedicationStore } from "@/store/medication-store";
 import { IconSelector } from "@/components/IconSelector";
+import { useKeyboard } from "@/hooks/useKeyboard";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const ITEM_HEIGHT = 170;
+const CENTER_SPACER = SCREEN_HEIGHT / 2 - ITEM_HEIGHT - 30;
 
 export default function AddMedicationScreen() {
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const router = useRouter();
+
   const [name, setName] = useState("");
+  const [form, setForm] = useState<MedicationForm>("tablet");
+  const [trackStock, setTrackStock] = useState(false);
   const [dosage, setDosage] = useState("");
+  const [unit, setUnit] = useState(UnitsByForm[form][0]);
   const [instructions, setInstructions] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [lowStockThreshold, setLowStockThreshold] = useState("");
@@ -22,33 +46,33 @@ export default function AddMedicationScreen() {
   const [selectedIconColor, setSelectedIconColor] = useState(colors.iconGreen);
 
   const { addMedication } = useMedicationStore();
+  const { keyboardShown } = useKeyboard();
+
+  useEffect(() => {
+    setUnit(UnitsByForm[form][0]);
+  }, [form]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    if (!name.trim()) newErrors.name = translations.required;
 
-    if (!name.trim()) {
-      newErrors.name = translations.required;
-    }
+    if (trackStock) {
+      if (!totalQuantity.trim()) {
+        newErrors.totalQuantity = translations.required;
+      } else if (isNaN(Number(totalQuantity)) || Number(totalQuantity) <= 0) {
+        newErrors.totalQuantity = translations.invalidQuantity;
+      }
 
-    if (!dosage.trim()) {
-      newErrors.dosage = translations.required;
-    }
-
-    if (!totalQuantity.trim()) {
-      newErrors.totalQuantity = translations.required;
-    } else if (isNaN(Number(totalQuantity)) || Number(totalQuantity) <= 0) {
-      newErrors.totalQuantity = translations.invalidQuantity;
-    }
-
-    if (!lowStockThreshold.trim()) {
-      newErrors.lowStockThreshold = translations.required;
-    } else if (
-      isNaN(Number(lowStockThreshold)) ||
-      Number(lowStockThreshold) < 0
-    ) {
-      newErrors.lowStockThreshold = translations.invalidQuantity;
-    } else if (Number(lowStockThreshold) >= Number(totalQuantity)) {
-      newErrors.lowStockThreshold = translations.thresholdTooHigh;
+      if (!lowStockThreshold.trim()) {
+        newErrors.lowStockThreshold = translations.required;
+      } else if (
+        isNaN(Number(lowStockThreshold)) ||
+        Number(lowStockThreshold) < 0
+      ) {
+        newErrors.lowStockThreshold = translations.invalidQuantity;
+      } else if (Number(lowStockThreshold) >= Number(totalQuantity)) {
+        newErrors.lowStockThreshold = translations.thresholdTooHigh;
+      }
     }
 
     setErrors(newErrors);
@@ -60,11 +84,14 @@ export default function AddMedicationScreen() {
 
     addMedication({
       name,
+      form,
       dosage,
+      unit,
       instructions,
       totalQuantity: Number(totalQuantity),
       remainingQuantity: Number(totalQuantity),
       lowStockThreshold: Number(lowStockThreshold),
+      trackStock,
       iconName: selectedIcon,
       iconColor: selectedIconColor,
     });
@@ -72,102 +99,235 @@ export default function AddMedicationScreen() {
     router.back();
   };
 
+  const formItems = [
+    {
+      key: "name",
+      type: "input",
+      label: translations.howMedicationNamed,
+      render: () => (
+        <Input
+          value={name}
+          onChangeText={setName}
+          placeholder="Парацетамол"
+          error={errors.name}
+        />
+      ),
+    },
+    {
+      key: "iconSelector",
+      label: translations.selectIcon,
+      render: () => (
+        <IconSelector
+          selectedIcon={selectedIcon}
+          selectedColor={selectedIconColor}
+          onSelectIcon={setSelectedIcon}
+          onSelectColor={setSelectedIconColor}
+          variant="add"
+        />
+      ),
+    },
+    {
+      key: "form",
+      label: translations.medicationForm,
+      render: () => (
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={form}
+            onValueChange={(value) => setForm(value)}
+            style={
+              Platform.OS === "ios"
+                ? [styles.picker, { height: 100 }]
+                : styles.picker
+            }
+          >
+            {Object.entries(MedicationForms).map(([key, label]) => (
+              <Picker.Item key={key} label={label} value={key} />
+            ))}
+          </Picker>
+        </View>
+      ),
+    },
+    ...(form === "tablet" || form === "capsule"
+      ? [
+          {
+            key: "dosage",
+            label: `${translations.valuePerUnitAdd} ${unit.slice(0, -1)}е?`,
+            render: () => (
+              <Input
+                value={dosage}
+                onChangeText={(text) => setDosage(text.replaceAll(",", "."))}
+                placeholder="20 мг"
+                error={errors.dosage}
+              />
+            ),
+          },
+        ]
+      : []),
+    {
+      key: "instructions",
+      label: translations.addInstructions,
+      render: () => (
+        <Input
+          value={instructions}
+          onChangeText={setInstructions}
+          placeholder="Принимать с водой"
+          multiline
+          numberOfLines={3}
+          accessoryViewID="instructions"
+        />
+      ),
+    },
+    {
+      key: "trackStock",
+      label: translations.setTrackStock,
+      render: () => (
+        <View style={styles.choiceRow}>
+          <Button
+            title={translations.yesPlease}
+            onPress={() => setTrackStock(true)}
+            style={trackStock ? styles.choiceButtonActive : styles.choiceButton}
+            textStyle={
+              trackStock
+                ? styles.choiceButtonActiveText
+                : styles.choiceButtonText
+            }
+          />
+          <Button
+            title={translations.noThanks}
+            onPress={() => setTrackStock(false)}
+            style={
+              !trackStock ? styles.choiceButtonActive : styles.choiceButton
+            }
+            textStyle={
+              !trackStock
+                ? styles.choiceButtonActiveText
+                : styles.choiceButtonText
+            }
+          />
+        </View>
+      ),
+    },
+    ...(trackStock
+      ? [
+          {
+            key: "totalQuantity",
+            label: translations.currentState,
+            render: () => (
+              <View style={[styles.rowInputs]}>
+                <Input
+                  label={translations.totalQuantity}
+                  value={totalQuantity}
+                  onChangeText={(text) =>
+                    setTotalQuantity(text.replace(",", "."))
+                  }
+                  placeholder="30"
+                  keyboardType="numeric"
+                  error={errors.totalQuantity}
+                  style={{ marginRight: 8 }}
+                  rightIcon={
+                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                  }
+                  accessoryViewID="totalQuantity"
+                />
+                <Input
+                  label={translations.lowStockThreshold}
+                  value={lowStockThreshold}
+                  onChangeText={(text) =>
+                    setLowStockThreshold(text.replace(",", "."))
+                  }
+                  placeholder="5"
+                  keyboardType="numeric"
+                  error={errors.lowStockThreshold}
+                  style={{ marginLeft: 8 }}
+                  leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
+                  rightIcon={
+                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                  }
+                  accessoryViewID="lowStockThreshold"
+                />
+              </View>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
-        enableOnAndroid
-        extraScrollHeight={10}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>
-            {translations.medicationDetails}
-          </Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 1}
+    >
+      <View style={styles.container}>
+        <View style={{ height: "85%" }}>
+          <Animated.FlatList
+            data={formItems}
+            keyExtractor={(item) => item.key}
+            ListHeaderComponent={<View style={{ height: CENTER_SPACER }} />}
+            ListFooterComponent={
+              <View style={{ height: CENTER_SPACER - 40 }} />
+            }
+            showsVerticalScrollIndicator={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: true }
+            )}
+            renderItem={({ item, index }) => {
+              const inputRange = [
+                (index - 1) * ITEM_HEIGHT,
+                index * ITEM_HEIGHT,
+                (index + 1) * ITEM_HEIGHT,
+              ];
+              const opacity = scrollY.interpolate({
+                inputRange,
+                outputRange: [0.5, 1, 0.5],
+                extrapolate: "clamp",
+              });
 
-          <IconSelector
-            selectedIcon={selectedIcon}
-            selectedColor={selectedIconColor}
-            onSelectIcon={setSelectedIcon}
-            onSelectColor={setSelectedIconColor}
+              return (
+                <Animated.View style={[styles.itemContainer, { opacity }]}>
+                  <Text style={styles.label}>{item.label}</Text>
+                  {item.render()}
+                </Animated.View>
+              );
+            }}
+            getItemLayout={(_, index) => ({
+              length: ITEM_HEIGHT,
+              offset: ITEM_HEIGHT * index,
+              index,
+            })}
           />
 
-          <Input
-            label={translations.medicationName}
-            value={name}
-            onChangeText={setName}
-            placeholder="Парацетамол"
-            error={errors.name}
-            leftIcon={<Pill size={20} color={colors.darkGray} />}
-          />
-
-          <Input
-            label={translations.dosage}
-            value={dosage}
-            onChangeText={setDosage}
-            placeholder="500 мг, 1 таблетка"
-            error={errors.dosage}
-          />
-
-          <Input
-            label={translations.instructionsOptional}
-            value={instructions}
-            onChangeText={setInstructions}
-            placeholder="Принимать с водой"
-            multiline
-            numberOfLines={3}
-            accessoryViewID="instructions"
-          />
-
-          <Text style={styles.label}>В наличии:</Text>
-          <View style={styles.rowInputs}>
-            <Input
-              label={translations.totalQuantity}
-              mark="*"
-              value={totalQuantity}
-              onChangeText={setTotalQuantity}
-              placeholder="30"
-              keyboardType="numeric"
-              error={errors.totalQuantity}
-              style={{ flex: 1, marginRight: 8 }}
-              accessoryViewID="totalQuantity"
-            />
-
-            <Input
-              label={translations.lowStockThreshold}
-              mark="*"
-              value={lowStockThreshold}
-              onChangeText={setLowStockThreshold}
-              placeholder="5"
-              keyboardType="numeric"
-              error={errors.lowStockThreshold}
-              style={{ flex: 1, marginLeft: 8 }}
-              leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
-              accessoryViewID="lowStockThreshold"
-            />
-          </View>
-          <View style={styles.rowInputs}>
-            <Text style={styles.hint}>*</Text>
-            <Text>{translations.measureWarn}</Text>
-          </View>
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            title={translations.saveMedication}
-            onPress={handleSave}
-            style={styles.saveButton}
-          />
-
-          <Button
-            title={translations.cancel}
-            onPress={() => router.back()}
-            variant="outline"
+          <LinearGradient
+            colors={["rgba(248, 249, 250, 0.5)", "rgba(255, 255, 255, 0)"]}
+            style={[styles.gradient, { top: 0, height: "30%" }]}
+            pointerEvents="none"
           />
         </View>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+
+        {!keyboardShown && (
+          <>
+            <View style={styles.buttonContainer}>
+              <Button
+                title={translations.saveMedication}
+                onPress={handleSave}
+                style={styles.saveButton}
+              />
+              <Button
+                title={translations.cancel}
+                onPress={() => router.back()}
+                variant="outline"
+              />
+            </View>
+            <LinearGradient
+              colors={["rgba(255, 255, 255, 0)", "rgba(248, 249, 250, 1)"]}
+              style={[styles.gradient, { bottom: 0, height: "20%" }]}
+              pointerEvents="none"
+            />
+          </>
+        )}
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -176,47 +336,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollContent: {
-    padding: 16,
-    flexGrow: 1,
+  itemContainer: {
+    paddingHorizontal: 22,
+    justifyContent: "center",
+    marginVertical: 20,
   },
-  formSection: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
+  label: {
+    fontSize: 24,
     fontWeight: "600",
+    marginBottom: 18,
     color: colors.text,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: 12,
+    overflow: "hidden",
     marginBottom: 16,
+  },
+  picker: {
+    width: "100%",
+    justifyContent: "center",
+  },
+  choiceRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  choiceButton: {
+    padding: 12,
+    backgroundColor: colors.lightGray,
+    width: "38%",
+  },
+  choiceButtonText: {
+    color: colors.text,
+  },
+  choiceButtonActive: {
+    backgroundColor: colors.primary,
+    width: "58%",
+  },
+  choiceButtonActiveText: {
+    color: colors.white,
   },
   rowInputs: {
     flexDirection: "row",
   },
+  gradient: {
+    position: "absolute",
+    width: "100%",
+    zIndex: 1,
+  },
   buttonContainer: {
-    marginTop: 8,
-    marginBottom: 24,
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+    zIndex: 2,
   },
   saveButton: {
     marginBottom: 12,
-  },
-  hint: {
-    color: colors.primary,
-    fontWeight: "700",
-    fontSize: 16,
-    marginRight: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.text,
-    marginBottom: 8,
   },
 });

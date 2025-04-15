@@ -69,25 +69,28 @@ export default function CalendarScreen() {
     setSelectedDate(date);
   };
 
-  const handleMarkTaken = (
+  const handleMarkIntake = (
+    status: "taken" | "missed",
     scheduleId: string,
     medicationId: string,
-    time: string
+    time: string,
+    dosage: string,
+    unit: string
   ) => {
-    recordIntake(scheduleId, medicationId, formattedDate, time, "taken");
+    recordIntake(
+      scheduleId,
+      medicationId,
+      formattedDate,
+      time,
+      status,
+      dosage,
+      unit
+    );
   };
 
-  const handleMarkMissed = (
-    scheduleId: string,
-    medicationId: string,
-    time: string
-  ) => {
-    recordIntake(scheduleId, medicationId, formattedDate, time, "missed");
-  };
-
-  const navigateToAddReminder = () => {
+  const navigateToAddCourse = () => {
     router.push({
-      pathname: "/reminders/add",
+      pathname: "/courses/add",
     });
   };
 
@@ -102,11 +105,25 @@ export default function CalendarScreen() {
         <MedicationCard
           medication={item}
           selectedDate={selectedDate}
-          onMarkTaken={(time) =>
-            handleMarkTaken(item.scheduleId, item.medicationId, time)
+          onMarkTaken={(time, dosageByTime, unit) =>
+            handleMarkIntake(
+              "taken",
+              item.scheduleId,
+              item.medicationId,
+              time,
+              dosageByTime,
+              unit
+            )
           }
-          onMarkMissed={(time) =>
-            handleMarkMissed(item.scheduleId, item.medicationId, time)
+          onMarkMissed={(time, dosageByTime, unit) =>
+            handleMarkIntake(
+              "missed",
+              item.scheduleId,
+              item.medicationId,
+              time,
+              dosageByTime,
+              unit
+            )
           }
           status={item.status}
         />
@@ -119,8 +136,8 @@ export default function CalendarScreen() {
       icon={<Pill size={40} color={colors.primary} />}
       title={translations.noMedicationsScheduled}
       description={translations.noMedicationsScheduledDesc}
-      buttonTitle={translations.addReminder}
-      onButtonPress={navigateToAddReminder}
+      buttonTitle={translations.addCourse}
+      onButtonPress={navigateToAddCourse}
     />
   );
 
@@ -132,7 +149,7 @@ export default function CalendarScreen() {
           headerRight: () => (
             <Button
               title={translations.add}
-              onPress={navigateToAddReminder}
+              onPress={navigateToAddCourse}
               variant="text"
               icon={<Plus size={18} color={colors.primary} />}
             />

@@ -15,6 +15,7 @@ interface IconSelectorProps {
   selectedColor: string;
   onSelectIcon: (iconName: string) => void;
   onSelectColor: (color: string) => void;
+  variant: string;
 }
 
 export const IconSelector: React.FC<IconSelectorProps> = ({
@@ -22,6 +23,7 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
   selectedColor,
   onSelectIcon,
   onSelectColor,
+  variant,
 }) => {
   const icons = [
     "Pill",
@@ -42,7 +44,6 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
     { name: "Зеленый", value: colors.iconGreen },
     { name: "Синий", value: colors.iconBlue },
     { name: "Красный", value: colors.iconRed },
-    // { name: 'Желтый', value: colors.iconYellow },
     { name: "Фиолетовый", value: colors.iconPurple },
     { name: "Оранжевый", value: colors.iconOrange },
     { name: "Розовый", value: colors.iconPink },
@@ -51,9 +52,16 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>{translations.selectIcon}</Text>
+      {variant === "edit" && (
+        <Text style={styles.sectionTitle}>{translations.selectIcon}</Text>
+      )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.iconsContainer}>
+        <View
+          style={[
+            styles.iconsContainer,
+            variant === "edit" && { marginVertical: 16 },
+          ]}
+        >
           {icons.map((iconName) => (
             <TouchableOpacity
               key={iconName}
@@ -69,16 +77,17 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
               <MedicationIcon
                 iconName={iconName}
                 color={selectedIcon === iconName ? colors.white : selectedColor}
-                size={24}
+                size={25}
               />
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
 
-      <Text style={[styles.sectionTitle, styles.colorTitle]}>
-        {translations.iconColor}
-      </Text>
+      {variant === "add" && <Text style={styles.colorTitle}>{translations.andColor}</Text>}
+      {variant === "edit" && (
+        <Text style={styles.sectionTitle}>{translations.iconColor}</Text>
+      )}
       <View style={styles.colorsContainer}>
         {iconColors?.map((color) => (
           <TouchableOpacity
@@ -98,15 +107,17 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
     color: colors.text,
-    marginBottom: 12,
   },
   colorTitle: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: colors.text,
     marginTop: 16,
   },
   iconsContainer: {
@@ -114,13 +125,13 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
   },
   iconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 30,
     backgroundColor: colors.lightGray,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: 13,
     borderWidth: 2,
     borderColor: "transparent",
   },
@@ -139,7 +150,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    // marginRight: 12,
     marginBottom: 12,
     borderWidth: 0,
   },

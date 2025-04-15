@@ -9,6 +9,7 @@ import {
   DayMedications,
   MedicationStats,
   MedicationAdherenceData,
+  DailyMedicationGroup,
 } from "@/types";
 import {
   format,
@@ -21,6 +22,8 @@ import {
   addDays,
   isAfter,
 } from "date-fns";
+import { convertUnit } from "@/utils/medication-utils";
+import { translations } from "@/constants/translations";
 
 interface MedicationState {
   medications: Medication[];
@@ -49,7 +52,9 @@ interface MedicationState {
     medicationId: string,
     date: string,
     time: string,
-    status: "taken" | "missed"
+    status: "taken" | "missed",
+    dosage: string,
+    unit: string
   ) => void;
 
   // Drafts CRUD
@@ -61,7 +66,7 @@ interface MedicationState {
   getMedicationById: (id: string) => Medication | undefined;
   getScheduleById: (id: string) => MedicationSchedule | undefined;
   getSchedulesForMedication: (medicationId: string) => MedicationSchedule[];
-  getMedicationsByDate: (date: string) => DailyMedicationWithStatus[];
+  getMedicationsByDate: (date: string) => DailyMedicationGroup[];
   getMedicationsByDateSlplittedByTime: (
     date: string
   ) => DailyMedicationWithStatus[];
@@ -150,13 +155,6 @@ export const useMedicationStore = create<MedicationState>()(
         const newSchedule: MedicationSchedule = {
           id,
           ...scheduleData,
-          frequency: scheduleData.frequency || "daily",
-          times: scheduleData.times || [],
-          dosageByTime: scheduleData.dosageByTime || "",
-          days: scheduleData.days || [],
-          dates: scheduleData.dates || [],
-          mealRelation: scheduleData.mealRelation || "no_relation",
-          startDate: scheduleData.startDate || format(new Date(), "yyyy-MM-dd"),
           createdAt: timestamp,
           updatedAt: timestamp,
         };
@@ -197,7 +195,15 @@ export const useMedicationStore = create<MedicationState>()(
         });
       },
 
-      recordIntake: (scheduleId, medicationId, date, time, status) => {
+      recordIntake: (
+        scheduleId,
+        medicationId,
+        date,
+        time,
+        status,
+        dosageByTime,
+        unit
+      ) => {
         const medication = get().medications.find(
           (med) => med.id === medicationId
         );
@@ -219,8 +225,11 @@ export const useMedicationStore = create<MedicationState>()(
           medicationName: medication.name,
           mealRelation: schedule.mealRelation,
           dosage: medication.dosage,
-          dosageByTime: schedule.dosageByTime,
+          dosageByTime,
+          unit,
           instructions: medication.instructions,
+          iconColor: medication.iconColor,
+          iconName: medication.iconName,
         };
 
         // Обновляем количество лекарства, если принято
@@ -229,14 +238,22 @@ export const useMedicationStore = create<MedicationState>()(
             (m) => m.id === medicationId
           );
           if (medication && medication.remainingQuantity > 0) {
-            const match = schedule.dosageByTime.match(/\d+(\.\d+)?/);
-            if (match) {
-              const dosageByTimeFloat = parseFloat(match[0]);
-              get().updateMedication(medicationId, {
-                remainingQuantity:
-                  medication.remainingQuantity - dosageByTimeFloat,
-              });
-            }
+            const dosageByTimeFloat = parseFloat(dosageByTime);
+
+            const usedAmount = medication.dosage
+              ? convertUnit(
+                  medication.form,
+                  dosageByTimeFloat,
+                  unit,
+                  medication.dosage
+                )
+              : convertUnit(medication.form, dosageByTimeFloat, unit);
+
+            get().updateMedication(medicationId, {
+              remainingQuantity:
+                medication.remainingQuantity -
+                Math.round(usedAmount * 1000) / 1000,
+            });
           }
         }
 
@@ -323,9 +340,8 @@ export const useMedicationStore = create<MedicationState>()(
         const dayOfWeek = new Date(date).getDay();
         const dateObj = new Date(date);
 
-        // Получаем все расписания, которые применяются к этому дню
+        // Получаем подходящие расписания
         const applicableSchedules = schedules.filter((schedule) => {
-          // Проверяем, входит ли дата в период приема лекарства
           const startDateObj = schedule.startDate
             ? parseISO(schedule.startDate)
             : null;
@@ -333,116 +349,100 @@ export const useMedicationStore = create<MedicationState>()(
             ? parseISO(schedule.endDate)
             : null;
 
-          // Если есть startDate, проверяем, что текущая дата не раньше startDate
-          if (startDateObj && isBefore(dateObj, startOfDay(startDateObj))) {
+          if (startDateObj && isBefore(dateObj, startOfDay(startDateObj)))
             return false;
-          }
-
-          // Если есть endDate, проверяем, что текущая дата не позже endDate
-          if (endDateObj && isAfter(dateObj, endOfDay(endDateObj))) {
+          if (endDateObj && isAfter(dateObj, endOfDay(endDateObj)))
             return false;
-          }
-
-          // Если есть durationDays, вычисляем конечную дату и проверяем
           if (startDateObj && schedule.durationDays) {
             const calculatedEndDate = addDays(
               startDateObj,
               schedule.durationDays
             );
-            if (isAfter(dateObj, endOfDay(calculatedEndDate))) {
-              return false;
-            }
+            if (isAfter(dateObj, endOfDay(calculatedEndDate))) return false;
           }
 
-          // Для ежедневного приема
-          if (schedule.frequency === "daily") {
-            return true;
-          }
-
-          // Для приема через день
+          if (schedule.frequency === "daily") return true;
           if (schedule.frequency === "every_other_day") {
-            const startDate = startDateObj || new Date(2023, 0, 1); // Фиксированная дата начала, если нет startDate
-            const diffTime = Math.abs(dateObj.getTime() - startDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const startDate = startDateObj || new Date(2023, 0, 1);
+            const diffDays = Math.floor(
+              (+dateObj - +startDate) / (1000 * 60 * 60 * 24)
+            );
             return diffDays % 2 === 0;
           }
-
-          // Для приема в определенные дни недели
           if (schedule.frequency === "specific_days") {
             return schedule.days.includes(dayOfWeek);
           }
-
-          // Для приема в определенные даты
           if (schedule.frequency === "specific_dates") {
             return schedule.dates.includes(date);
           }
-
           return false;
         });
 
-        // Сопоставляем расписания с лекарствами и статусом
-        const results = applicableSchedules
-          .map((schedule) => {
-            const medication = medications.find(
-              (med) => med.id === schedule.medicationId
-            );
-            if (!medication) return null;
+        const results: DailyMedicationGroup[] = [];
+        const existingKeys = new Set<string>();
 
-            // Находим запись о приеме для этого расписания и даты
+        applicableSchedules.forEach((schedule) => {
+          const medication = medications.find(
+            (med) => med.id === schedule.medicationId
+          );
+          if (!medication) return;
+
+          (schedule.times || []).forEach(({ time, dosage, unit }) => {
+            const key = `${date}-${schedule.id}-${medication.id}-${time}`;
+            existingKeys.add(key);
+
             const intake = intakes.find(
-              (intake) =>
-                intake.scheduleId === schedule.id &&
-                intake.scheduledDate === date
+              (i) =>
+                i.scheduleId === schedule.id &&
+                i.medicationId === medication.id &&
+                i.scheduledDate === date &&
+                i.scheduledTime === time
             );
-            return {
-              id: `${date}-${schedule.id}`,
+
+            results.push({
+              id: key,
               scheduleId: schedule.id,
               medicationId: medication.id,
               name: medication.name,
               dosage: medication.dosage,
-              dosageByTime: schedule.dosageByTime,
               instructions: medication.instructions,
-              times: schedule.times,
+              times: [{ time, dosage, unit }],
               mealRelation: schedule.mealRelation,
-              status: intake?.status || "pending",
               takenAt: intake?.takenAt,
-              iconName: medication.iconName,
-              iconColor: medication.iconColor,
-            } as DailyMedicationWithStatus;
-          })
-          .filter(Boolean) as DailyMedicationWithStatus[];
-
-        const existingIds = new Set(
-          results.map((r) => `${r.scheduleId}-${r.medicationId}-${r.time}`)
-        );
-        const orphanIntakes = intakes.filter(
-          (intake) =>
-            intake.scheduledDate === date &&
-            !schedules.find((s) => s.id === intake.scheduleId) // удалённый schedule
-        );
-
-        orphanIntakes.forEach((intake) => {
-          const med = medications.find((m) => m.id === intake.medicationId);
-          const key = `${intake.scheduleId}-${intake.medicationId}-${intake.scheduledTime}`;
-          if (existingIds.has(key)) return;
-
-          results.push({
-            id: `${intake.scheduledTime}-${intake.scheduleId}`,
-            scheduleId: intake.scheduleId,
-            medicationId: intake.medicationId,
-            name: intake.medicationName,
-            dosage: intake.dosage,
-            dosageByTime: intake.dosageByTime,
-            instructions: intake.instructions,
-            times: [intake.scheduledTime],
-            mealRelation: intake.mealRelation,
-            status: intake.status,
-            takenAt: intake.takenAt,
-            iconName: med?.iconName,
-            iconColor: med?.iconColor,
-            time: intake.scheduledTime,
+              iconName: intake?.iconName || medication.iconName,
+              iconColor: intake?.iconColor || medication.iconColor,
+            });
           });
         });
+
+        // Добавляем orphan intakes
+        intakes
+          .filter((intake) => intake.scheduledDate === date)
+          .forEach((intake) => {
+            const key = `${date}-${intake.scheduleId}-${intake.medicationId}-${intake.scheduledTime}`;
+            if (existingKeys.has(key)) return;
+
+            results.push({
+              id: key,
+              scheduleId: intake.scheduleId,
+              medicationId: intake.medicationId,
+              name: intake.medicationName,
+              dosage: intake.dosage,
+              instructions: intake.instructions,
+              times: [
+                {
+                  time: intake.scheduledTime,
+                  dosage: intake.dosageByTime,
+                  unit: intake.unit,
+                },
+              ],
+              mealRelation: intake.mealRelation,
+              takenAt: intake.takenAt,
+              iconName: intake.iconName,
+              iconColor: intake.iconColor,
+            });
+          });
+
         return results;
       },
 
@@ -452,22 +452,31 @@ export const useMedicationStore = create<MedicationState>()(
         const { getMedicationsByDate, intakes } = get();
         const medications = getMedicationsByDate(date);
 
-        medications.forEach((el) => {
-          el.times?.forEach((time) => {
+        medications.forEach((group) => {
+          group.times?.forEach(({ time, dosage, unit }) => {
             const intake = intakes.find(
               (intake) =>
-                intake.scheduleId === el.scheduleId &&
-                intake.medicationId === el.medicationId &&
+                intake.scheduleId === group.scheduleId &&
+                intake.medicationId === group.medicationId &&
                 intake.scheduledDate === date &&
                 intake.scheduledTime === time
             );
 
             result.push({
-              ...el,
+              id: `${time}-${group.id}`,
+              scheduleId: group.scheduleId,
+              medicationId: group.medicationId,
+              name: group.name,
+              dosage,
+              dosageByTime: intake?.dosageByTime || dosage,
+              unit: intake?.unit || unit,
+              instructions: group.instructions,
               time,
-              id: `${time}-${el.id}`,
+              mealRelation: group.mealRelation,
               status: intake?.status || "pending",
-              dosageByTime: intake?.dosageByTime || el.dosageByTime,
+              takenAt: intake?.takenAt,
+              iconName: intake?.iconName || group.iconName,
+              iconColor: intake?.iconColor || group.iconColor,
             });
           });
         });
@@ -531,12 +540,13 @@ export const useMedicationStore = create<MedicationState>()(
 
       getLowStockMedications: () => {
         return get().medications.filter(
-          (med) => med.remainingQuantity <= med.lowStockThreshold
+          (med) =>
+            med.trackStock && med.remainingQuantity <= med.lowStockThreshold
         );
       },
 
       getMedicationAdherenceByTimeRange: (days) => {
-        const { medications, intakes } = get();
+        const { intakes } = get();
         const startDate = subDays(new Date(), days);
 
         // Фильтруем приемы по указанному периоду
@@ -568,12 +578,12 @@ export const useMedicationStore = create<MedicationState>()(
         // Преобразуем в массив с процентами соблюдения
         return Object.entries(medicationAdherence)
           .map(([medicationId, stats]) => {
-            const medication = medications.find(
+            const intake = intakes.find(
               (med) => med.id === medicationId
             );
             return {
               medicationId,
-              medicationName: medication?.name || "Неизвестное лекарство",
+              medicationName: intake?.medicationName || translations.unknownMedication,
               adherenceRate:
                 stats.total > 0 ? (stats.taken / stats.total) * 100 : 0,
             };

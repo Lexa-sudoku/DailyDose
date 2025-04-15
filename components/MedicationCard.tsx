@@ -12,8 +12,8 @@ import { LinearGradient } from "expo-linear-gradient";
 interface MedicationCardProps {
   selectedDate: Date;
   medication: DailyMedicationWithStatus;
-  onMarkTaken: (time: string) => void;
-  onMarkMissed: (time: string) => void;
+  onMarkTaken: (time: string, dosageByTime: string, unit: string) => void;
+  onMarkMissed: (time: string, dosageByTime: string, unit: string) => void;
   status: string;
 }
 
@@ -32,6 +32,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
     iconColor,
     instructions,
     dosageByTime,
+    unit
   } = medication;
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -61,11 +62,11 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   const getStatusIcon = () => {
     switch (status) {
       case "taken":
-        return <Check size={18} color={colors.white} />;
+        return <Check size={24} color={colors.white} />;
       case "missed":
-        return <X size={18} color={colors.white} />;
+        return <X size={24} color={colors.white} />;
       default:
-        return <Clock size={18} color={colors.white} />;
+        return <Clock size={24} color={colors.white} />;
     }
   };
 
@@ -74,12 +75,12 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   };
 
   const handleMarkTaken = () => {
-    onMarkTaken(time);
+    onMarkTaken(time, dosageByTime, unit);
     setModalVisible(false);
   };
 
   const handleMarkMissed = () => {
-    onMarkMissed(time);
+    onMarkMissed(time, dosageByTime, unit);
     setModalVisible(false);
   };
 
@@ -98,14 +99,14 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
           <View style={styles.medicationInfo}>
             <View style={styles.nameContainer}>
               <MedicationIcon
-                iconName={iconName || "Pill"}
+                iconName={iconName}
                 color={iconColor || colors.primary}
                 size={35}
               />
               <View>
                 <Text style={styles.medicationName}>{name}</Text>
                 <Text style={styles.dosage}>
-                  {dosageByTime + ", " + getMealRelationText(mealRelation)}
+                  {getMealRelationText(mealRelation) + ", " + dosageByTime + " " + unit}
                 </Text>
               </View>
             </View>
@@ -115,7 +116,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
 
       {/* Модальное окно с информацией о лекарстве */}
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
@@ -130,7 +131,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
               />
               <View style={styles.modalHeaderText}>
                 <Text style={styles.modalTitle}>{name}</Text>
-                <Text style={styles.modalSubtitle}>{dosageByTime}</Text>
+                <Text style={styles.modalSubtitle}>{dosageByTime + ' ' + unit}</Text>
               </View>
             </View>
 
@@ -269,8 +270,8 @@ const styles = StyleSheet.create({
   },
   statusIndicator: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 16,
+    paddingVertical:16,
     borderRadius: 30,
     marginBottom: 12,
   },

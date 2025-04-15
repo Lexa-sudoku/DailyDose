@@ -1,7 +1,3 @@
-// todo кастомные кнопки назад для ios
-
-// todo когда запас лекарства исчерпан, а человек отмечает, что он его принял, надо предложить ему обновить имеющееся кол-во препарата в вкладке. там же нужно сделать удобную кнопку "пополнить запас"
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -21,7 +17,7 @@ import { translations } from "@/constants/translations";
 import { format } from "date-fns/format";
 import { parseISO } from "date-fns";
 
-export default function AddReminderScreen() {
+export default function AddCourseScreen() {
   const params = useLocalSearchParams<{
     medicationId?: string;
   }>();
@@ -58,7 +54,6 @@ export default function AddReminderScreen() {
           id: schedule.id,
           medicationId: schedule.medicationId,
           times: schedule.times || [],
-          dosageByTime: schedule.dosageByTime || "",
           frequency: schedule.frequency || "daily",
           days: schedule.days || [],
           dates: schedule.dates || [],
@@ -100,12 +95,12 @@ export default function AddReminderScreen() {
   };
 
   const navigateToSelectMedication = () => {
-    router.replace("/reminders/select-medication");
+    router.replace("/courses/select-medication");
   };
 
   const goToEditSchedule = (id: string) => {
     if (!validateMedication()) return;
-    router.replace(`/reminders/${id}`);
+    router.replace({ pathname: "/courses/[id]", params: { id } });
   };
 
   const addScheduleCourse = () => {
@@ -114,9 +109,8 @@ export default function AddReminderScreen() {
     const newSchedule: MedicationSchedule = {
       id: `draft-${timestamp}`,
       medicationId: `${selectedMedicationId}`,
-      frequency: "daily",
-      times: [""],
-      dosageByTime: "",
+      frequency: "specific_days",
+      times: [{ time: "", dosage: "", unit: "" }],
       dates: [],
       days: [],
       mealRelation: "no_relation",
@@ -239,9 +233,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    justifyContent: "center",
   },
   scrollContent: {
     padding: 16,
+    justifyContent: "center",
+    flex: 1,
   },
   formSection: {
     backgroundColor: colors.white,

@@ -56,9 +56,7 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
 
   return (
     <>
-      <View style={styles.durationContainer}>
-        <Text style={styles.label}>{translations.treatmentPeriod}</Text>
-
+      <View>
         <View style={styles.durationTypeContainer}>
           <TouchableOpacity
             style={[
@@ -158,7 +156,6 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
                 accessoryViewID="duration"
                 error={errors.duration}
               />
-              <Text style={styles.daysText}></Text>
             </View>
           </View>
         )}
@@ -194,18 +191,10 @@ export const ScheduleDuration: React.FC<ScheduleDurationProps> = ({
 };
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  durationContainer: {
-    marginTop: 16,
-  },
   durationTypeContainer: {
     flexDirection: "row",
     marginBottom: 16,
+    gap: 16
   },
   durationTypeButton: {
     flex: 1,
@@ -214,8 +203,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "flex-start",
-    marginRight: 8,
     borderRadius: 8,
+    backgroundColor: colors.white,
   },
   durationTypeButtonSelected: {
     backgroundColor: colors.primary,
@@ -223,6 +212,7 @@ const styles = StyleSheet.create({
   },
   durationTypeButtonText: {
     fontSize: 14,
+    fontWeight: "600",
     color: colors.text,
   },
   durationTypeButtonTextSelected: {
@@ -243,6 +233,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
+    backgroundColor: colors.white,
   },
   dateButtonText: {
     marginLeft: 8,
@@ -256,9 +247,9 @@ const styles = StyleSheet.create({
   },
   durationInput: {
     flex: 1,
+    fontSize: 14,
   },
   daysText: {
-    marginLeft: 8,
     fontSize: 14,
     color: colors.textSecondary,
   },

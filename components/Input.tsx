@@ -19,6 +19,7 @@ import Svg, { Path } from "react-native-svg";
 
 interface InputProps {
   label?: string;
+  desc?: string;
   mark?: string;
   value: string;
   onChangeText: (text: string) => void;
@@ -40,6 +41,7 @@ interface InputProps {
 export const Input: React.FC<InputProps> = ({
   label,
   mark,
+  desc,
   value,
   onChangeText,
   placeholder,
@@ -70,6 +72,7 @@ export const Input: React.FC<InputProps> = ({
             <Text style={styles.label}>
               {label}
               {mark && <Text style={styles.mark}>{mark}</Text>}
+              {desc && <Text style={styles.desc}>{desc}</Text>}
             </Text>
           )}
 
@@ -84,6 +87,7 @@ export const Input: React.FC<InputProps> = ({
             {leftIcon && (
               <View style={styles.leftIconContainer}>{leftIcon}</View>
             )}
+
 
             {/* todo поправить ошибку, но не критично, не влияет */}
             <TextInput
@@ -127,7 +131,7 @@ export const Input: React.FC<InputProps> = ({
           {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
       </SafeAreaView>
-      
+
       {/* кастомная кнопка "Готово" для клавиатуры ios */}
       {Platform.OS === "ios" && accessoryViewID && (
         <InputAccessoryView nativeID={accessoryViewID}>
@@ -252,5 +256,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 16,
     marginLeft: 8,
+  },
+  desc: {
+    fontSize: 14,
+    fontWeight: "400",
+    color: colors.textSecondary,
+    marginBottom: 8,
   },
 });

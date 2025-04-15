@@ -56,15 +56,21 @@ export const translations = {
 
   // Add/Edit medication
   addMedication: "Добавить лекарство",
+  addQuantity: "Пополнить",
+  addStock: "Пополнение запаса",
   editMedication: "Редактировать лекарство",
   medicationDetails: "Информация о лекарстве",
   medicationName: "Название лекарства",
+  intake: "Прием",
   dosage: "Дозировка",
+  medicationForm: "Форма выпуска",
+  dose: "Дозировка: кол-во единиц препарата",
+  dosageMeasure: "Единица препарата ",
   instructions: "Инструкции",
-  instructionsOptional: "Инструкции -- опционально",
   totalQuantity: "Общее количество ",
+  outOf: "из",
   remainingQuantity: "Осталось",
-  lowStockThreshold: "Пора пополнить при ",
+  lowStockThreshold: "Пора пополнить ",
   schedule: "Расписание",
   time: "Время",
   days: "Дни недели",
@@ -83,18 +89,15 @@ export const translations = {
   back: "Назад",
   close: "Закрыть",
 
-  // Reminders
-  addReminder: "Добавить напоминание",
-  editReminder: "Редактировать напоминание",
+  // Courses
+  addCourse: "Добавить курс",
+  editCourse: "Редактировать курс",
   selectMedication: "Выберите лекарство",
   selectCourse: "Выберите курс",
   selectMedicationRequired: "Необходимо выбрать лекарство",
   tapToSelectMedication: "Нажмите, чтобы выбрать лекарство",
-  saveReminder: "Сохранить напоминание",
-  updateReminder: "Обновить напоминание",
-  deleteReminder: "Удалить напоминание",
-  deleteReminderConfirm:
-    "Вы уверены, что хотите удалить это напоминание? Это действие нельзя отменить.",
+  saveEdit: "Сохранить изменения",
+  updateCourse: "Обновить курс",
   medication: "Лекарство",
   frequency: "Частота",
   daily: "Ежедневно",
@@ -110,7 +113,7 @@ export const translations = {
   noMedicationsFound: "Лекарства не найдены",
   noMedicationsAddedYet: "Вы еще не добавили ни одного лекарства",
   addNewMedication: "Добавить новое лекарство",
-  cancelEdit: "Отменить изменения",
+  cancelEdit: "Отменить",
   deleteCourse: "Удалить курс",
   deleteCourseConfirm:
     "Вы уверены, что хотите удалить этот курс? Это действие нельзя отменить.",
@@ -147,7 +150,7 @@ export const translations = {
   // Notifications
   notificationSettings: "Настройки уведомлений",
   medicationReminders: "Напоминания о приеме",
-  reminderTime: "Время напоминания",
+  reminderTime: "Время приема",
   minutesBefore: "минут до приема",
   lowStockReminders: "Напоминания о низком запасе",
   enabled: "Включено",
@@ -168,10 +171,12 @@ export const translations = {
   allTime: "За все время",
   mostMissed: "Чаще всего пропускаемые",
   bestAdherence: "Лучшее соблюдение",
+  unknownMedication: "Неизвестное лекарство",
 
   // Medication icons
   selectIcon: "Выберите иконку",
   iconColor: "Цвет иконки",
+  andColor: "...и цвет!",
 
   // Validation errors
   required: "Обязательное поле",
@@ -179,16 +184,17 @@ export const translations = {
   passwordTooShort: "Пароль должен содержать минимум 6 символов",
   passwordsDoNotMatch: "Пароли не совпадают",
   invalidQuantity: "Введите корректное количество",
+  invalidTime: "Введите корректное время",
   thresholdTooHigh: "Порог должен быть меньше общего количества",
   remainingTooHigh: "Не может превышать общее количество",
   selectAtLeastOneDay: "Выберите хотя бы один день",
   selectAtLeastOneDate: "Выберите хотя бы одну дату",
+  selectMeasureType: "Выберите единицу измерения",
 
   // Multiple schedules
-  addCourse: "Добавить курс",
   removeCourse: "Удалить",
   course: "Курс",
-  addTime: "Добавить время",
+  addTime: "Добавить прием",
 
   // Onboarding
   next: "Далее",
@@ -268,4 +274,21 @@ export const translations = {
   enterDays: "Введите количество дней",
   measureWarn:
     "Используйте те же единицы измерения, в каких будет вычисляться Ваша разовая доза",
+  enterNumber: "Введите количество",
+  loading: "Загрузка",
+  optional: "опционально",
+
+  // Опрос
+  howMedicationNamed: "Как называется лекарство?",
+  valuePerUnit: "Kол-во вещества в одной",
+  valuePerUnitAdd: "Какое количество вещества содержится в одной",
+  addInstructions: "Добавьте инструкции",
+  setTrackStock: "Хотите отслеживать наличие?",
+  yesPlease: "Да, хочу",
+  noThanks: "Нет, спасибо",
+  currentState: "Введите информацию о текущих запасах препарата",
+  courseDuration: "Длительность курса",
+  courseFrequency: "Как часто во время курса необходимо принимать препарат?",
+  courseTimesByDay: "Сколько раз в день необходимо принимать препарат?",
+  courseMealRealation: "Укажите зависимость от приемов пищи",
 };

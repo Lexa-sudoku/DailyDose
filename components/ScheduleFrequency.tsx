@@ -10,14 +10,13 @@ import { Calendar } from "lucide-react-native";
 import { colors } from "@/constants/colors";
 import { translations } from "@/constants/translations";
 import { DatePicker } from "./DatePicker";
+import { FrequencyType } from "@/types";
 
 interface ScheduleFrequencyProps {
-  frequency: "daily" | "every_other_day" | "specific_days" | "specific_dates";
+  frequency: FrequencyType;
   days: number[];
   dates: string[];
-  onFrequencyChange: (
-    frequency: "daily" | "every_other_day" | "specific_days" | "specific_dates"
-  ) => void;
+  onFrequencyChange: (frequency: FrequencyType) => void;
   onDaysChange: (days: number[]) => void;
   onDatesChange: (dates: string[]) => void;
   errors?: {
@@ -82,8 +81,6 @@ export const ScheduleFrequency: React.FC<ScheduleFrequencyProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{translations.frequency}</Text>
-
       <View style={styles.frequencyOptions}>
         {frequencyOptions.map((option) => (
           <TouchableOpacity
@@ -109,7 +106,6 @@ export const ScheduleFrequency: React.FC<ScheduleFrequencyProps> = ({
 
       {frequency === "specific_days" && (
         <View style={styles.daysContainer}>
-          <Text style={styles.sublabel}>{translations.selectDays}</Text>
           <View style={styles.daysButtons}>
             {adjustedDays.map((day, dayIndex) => (
               <TouchableOpacity
@@ -137,8 +133,6 @@ export const ScheduleFrequency: React.FC<ScheduleFrequencyProps> = ({
 
       {frequency === "specific_dates" && (
         <View style={styles.datesContainer}>
-          <Text style={styles.sublabel}>{translations.selectDates}</Text>
-
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -179,18 +173,10 @@ export const ScheduleFrequency: React.FC<ScheduleFrequencyProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text,
     marginBottom: 16,
   },
   frequencyOptions: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   frequencyButton: {
     paddingVertical: 12,
@@ -199,6 +185,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     marginBottom: 8,
+    backgroundColor: colors.white,
   },
   frequencyButtonSelected: {
     backgroundColor: colors.primary,
@@ -206,51 +193,43 @@ const styles = StyleSheet.create({
   },
   frequencyButtonText: {
     fontSize: 14,
+    fontWeight: "600",
     color: colors.text,
   },
   frequencyButtonTextSelected: {
     color: colors.white,
   },
-  daysContainer: {
-    marginBottom: 16,
-  },
-  sublabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
+  daysContainer: { marginBottom: -7 },
   daysButtons: {
     flexDirection: "row",
     flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   dayButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 45,
+    height: 45,
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 8,
-    marginBottom: 8,
+    marginRight: 4,
+    backgroundColor: colors.white,
   },
   dayButtonSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   dayButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.text,
   },
   dayButtonTextSelected: {
     color: colors.white,
   },
-  datesContainer: {
-    marginBottom: 16,
-  },
-  datesScrollView: {
-    marginBottom: 8,
-  },
+  datesContainer: {},
+  datesScrollView: {},
   addDateButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -261,6 +240,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     borderRadius: 20,
     marginRight: 8,
+    backgroundColor: colors.white,
   },
   addDateText: {
     fontSize: 14,
@@ -273,6 +253,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightGray,
     borderRadius: 20,
     marginRight: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   dateTagText: {
     fontSize: 14,

@@ -1,10 +1,6 @@
+import { useState } from "react";
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-} from "react-native";
+import { View, Text, StyleSheet, FlatList } from "react-native";
 import { Stack, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Plus, Pill, AlertTriangle } from "lucide-react-native";
@@ -14,10 +10,24 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { useMedicationStore } from "@/store/medication-store";
 import { translations } from "@/constants/translations";
+import { EditMedicationModal } from "@/components/EditMedicationModal";
+import { Medication } from "@/types";
 
 export default function MedicationsScreen() {
   const { medications, getLowStockMedications } = useMedicationStore();
   const lowStockMedications = getLowStockMedications();
+
+  const [selectedMedication, setSelectedMedication] = useState<Medication>();
+  const [isModalVisible, setModalVisible] = useState(false);
+
+  const openModal = (medication: Medication) => {
+    setSelectedMedication(medication)
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
 
   const navigateToAddMedication = () => {
     router.push("/medications/add");
@@ -27,10 +37,11 @@ export default function MedicationsScreen() {
     router.push(`/medications/${id}`);
   };
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }: { item: Medication }) => (
     <MedicationInventoryCard
       medication={item}
       onEdit={() => navigateToEditMedication(item.id)}
+      onRefill={() => openModal(item)}
     />
   );
 
@@ -86,6 +97,13 @@ export default function MedicationsScreen() {
         ListHeaderComponent={renderLowStockWarning}
         ListEmptyComponent={renderEmptyState}
       />
+      {selectedMedication && (
+        <EditMedicationModal
+          visible={isModalVisible}
+          onClose={closeModal}
+          medication={selectedMedication}
+        />
+      )}
     </SafeAreaView>
   );
 }

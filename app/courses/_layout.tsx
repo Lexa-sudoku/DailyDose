@@ -1,15 +1,16 @@
 import { Stack } from "expo-router";
 import { translations } from "@/constants/translations";
 import { BackButton } from "@/components/BackButton";
+import React from "react";
 
-export default function RemindersLayout() {
+export default function CoursesLayout() {
   return (
     <Stack>
       <Stack.Screen
         name="add"
         options={{
           headerShown: true,
-          title: translations.addReminder,
+          title: translations.addCourse,
           headerLeft: () => <BackButton />,
         }}
       />
@@ -25,7 +26,7 @@ export default function RemindersLayout() {
         name="[id]"
         options={{
           headerShown: true,
-          title: translations.editReminder,
+          title: translations.editCourse,
           headerLeft: () => <BackButton />,
         }}
       />

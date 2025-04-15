@@ -15,6 +15,8 @@ import { Button } from "@/components/Button";
 import { useMedicationStore } from "@/store/medication-store";
 import { translations } from "@/constants/translations";
 import { MedicationIcon } from "@/components/MedicationIcon";
+import { MedicationForms } from "@/constants/medication";
+import { Medication } from "@/types";
 
 export default function SelectMedicationScreen() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,7 +28,7 @@ export default function SelectMedicationScreen() {
 
   const handleSelectMedication = (medicationId: string) => {
     router.replace({
-      pathname: "/reminders/add",
+      pathname: "/courses/add", 
       params: { medicationId },
     });
   };
@@ -35,7 +37,7 @@ export default function SelectMedicationScreen() {
     router.push("/medications/add");
   };
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }: { item: Medication }) => (
     <TouchableOpacity
       style={styles.medicationItem}
       onPress={() => handleSelectMedication(item.id)}
@@ -49,7 +51,7 @@ export default function SelectMedicationScreen() {
       </View>
       <View style={styles.medicationInfo}>
         <Text style={styles.medicationName}>{item.name}</Text>
-        <Text style={styles.medicationDosage}>{item.dosage}</Text>
+        <Text style={styles.medicationDosage}>{MedicationForms[item.form]}{item.dosage ? `, ${item.dosage}` : ""}</Text>
       </View>
     </TouchableOpacity>
   );

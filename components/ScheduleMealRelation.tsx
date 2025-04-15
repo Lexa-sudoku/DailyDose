@@ -20,47 +20,34 @@ export const ScheduleMealRelation: React.FC<ScheduleMealRelationProps> = ({
     { value: "no_relation", label: translations.noMealRelation },
   ];
   return (
-    <>
-      <Text style={styles.label}>{translations.mealRelation}</Text>
-      <View style={styles.mealRelationContainer}>
-        {mealRelationOptions.map((option) => (
-          <TouchableOpacity
-            key={option.value}
+    <View style={styles.mealRelationContainer}>
+      {mealRelationOptions.map((option) => (
+        <TouchableOpacity
+          key={option.value}
+          style={[
+            styles.mealRelationButton,
+            mealRelation === option.value && styles.mealRelationButtonSelected,
+          ]}
+          onPress={() => onMealRelationChange(option.value as any)}
+        >
+          <Text
             style={[
-              styles.mealRelationButton,
+              styles.mealRelationButtonText,
               mealRelation === option.value &&
-                styles.mealRelationButtonSelected,
+                styles.mealRelationButtonTextSelected,
             ]}
-            onPress={() => onMealRelationChange(option.value as any)}
           >
-            <Text
-              style={[
-                styles.mealRelationButtonText,
-                mealRelation === option.value &&
-                  styles.mealRelationButtonTextSelected,
-              ]}
-            >
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </>
+            {option.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text,
-    marginBottom: 16,
-  },
   mealRelationContainer: {
     marginBottom: 8,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   mealRelationButton: {
     paddingVertical: 12,
@@ -69,6 +56,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     marginBottom: 8,
+    backgroundColor: colors.white,
   },
   mealRelationButtonSelected: {
     backgroundColor: colors.primary,
@@ -76,6 +64,7 @@ const styles = StyleSheet.create({
   },
   mealRelationButtonText: {
     fontSize: 14,
+    fontWeight: "600",
     color: colors.text,
   },
   mealRelationButtonTextSelected: {

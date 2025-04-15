@@ -1,3 +1,5 @@
+import { MedicationForm } from "@/constants/medication";
+
 export interface User {
   id: string;
   name: string;
@@ -8,13 +10,16 @@ export interface User {
 export interface Medication {
   id: string;
   name: string;
-  dosage: string;
+  form: MedicationForm;
+  dosage?: string;
+  unit: string;
   instructions: string;
   totalQuantity: number;
   remainingQuantity: number;
   lowStockThreshold: number;
-  iconName?: string;
-  iconColor?: string;
+  trackStock: boolean;
+  iconName: string;
+  iconColor: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -25,12 +30,25 @@ export type MealRelation =
   | "with_meal"
   | "no_relation";
 
+export type FrequencyType =
+  | "daily"
+  | "every_other_day"
+  | "specific_days"
+  | "specific_dates";
+
+export type ScheduleTimeItem = {
+  time: string;
+  dosage: string;
+  unit: string;
+};
+
+export type Status = "taken" | "missed" | "pending";
+
 export interface MedicationSchedule {
   id: string;
   medicationId: string;
-  times: string[]; // HH:MM format
-  dosageByTime: string;
-  frequency: "daily" | "every_other_day" | "specific_days" | "specific_dates";
+  times: ScheduleTimeItem[]; // HH:MM format
+  frequency: FrequencyType;
   days: number[]; // 1-7 (Monday-Sunday)
   dates: string[]; // YYYY-MM-DD format
   mealRelation: MealRelation;
@@ -42,19 +60,36 @@ export interface MedicationSchedule {
 }
 
 export interface MedicationIntake {
-  dosageByTime: string;
   id: string;
   scheduleId: string;
   medicationId: string;
   scheduledTime: string; // HH:MM format
   scheduledDate: string; // YYYY-MM-DD format
-  status: "taken" | "missed" | "pending";
+  status: Status;
   takenAt?: number;
   createdAt: number;
   medicationName: string;
   mealRelation: MealRelation;
-  dosage: string;
+  dosage?: string;
   instructions: string;
+  dosageByTime: string;
+  unit: string;
+  iconName: string;
+  iconColor: string;
+}
+
+export interface DailyMedicationGroup {
+  id: string;
+  scheduleId: string;
+  medicationId: string;
+  name: string;
+  dosage?: string;
+  instructions: string;
+  times: { time: string; dosage: string; unit: string }[];
+  mealRelation: MealRelation;
+  takenAt?: number;
+  iconName: string;
+  iconColor: string;
 }
 
 export interface DailyMedicationWithStatus {
@@ -64,14 +99,14 @@ export interface DailyMedicationWithStatus {
   name: string;
   dosage: string;
   dosageByTime: string;
+  unit: string;
   instructions: string;
-  times: string[];
   time: string;
   mealRelation: MealRelation;
-  status: "taken" | "missed" | "pending";
+  status: Status;
   takenAt?: number;
-  iconName?: string;
-  iconColor?: string;
+  iconName: string;
+  iconColor: string;
 }
 
 export interface DayMedications {
