@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   Animated,
-  KeyboardAvoidingView,
-  Platform,
+  Image,
+  TouchableOpacity,
   Dimensions,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 
 import { useMedicationStore } from "@/store/medication-store";
 import { useScheduleForm } from "@/hooks/useScheduleForm";
@@ -23,10 +23,11 @@ import { ScheduleFrequency } from "@/components/ScheduleFrequency";
 import { ScheduleMealRelation } from "@/components/ScheduleMealRelation";
 import { ScheduleDuration } from "@/components/ScheduleDuration";
 import { LinearGradient } from "expo-linear-gradient";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useKeyboard } from "@/hooks/useKeyboard";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const ITEM_HEIGHT = 400;
+const ITEM_HEIGHT = 350;
 const CENTER_SPACER = SCREEN_HEIGHT / 2 - ITEM_HEIGHT / 2;
 
 export default function EditScheduleScreen() {
@@ -78,14 +79,14 @@ export default function EditScheduleScreen() {
     } else {
       updateSchedule(scheduleId, schedule);
     }
-    router.back();
+    router.replace("/(tabs)/calendar");
   };
 
   const handleCancel = () => {
     if (draft) {
       deleteDraftSchedule(scheduleId);
     }
-    router.back();
+    router.replace("/(tabs)/calendar");
   };
 
   const validateForm = () => {
@@ -112,7 +113,7 @@ export default function EditScheduleScreen() {
 
       if (
         !item.time ||
-        !/^(?:[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(item.time)
+        !/^(?:0?[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(item.time)
       ) {
         errorsForIndex.push(translations.invalidTime);
       }
@@ -187,9 +188,7 @@ export default function EditScheduleScreen() {
           times={schedule.times}
           medicationForm={form}
           onAddTime={addTime}
-          onTimeChange={(index, time) => {
-            updateTime(index, time.trim());
-          }}
+          onTimeChange={(index, time) => updateTime(index, time.trim())}
           onDosageChange={(index, dosage) => updateDosage(index, dosage)}
           onUnitChange={(index, unit) => updateUnit(index, unit)}
           onRemoveTime={(index) => removeTime(index)}
@@ -211,11 +210,16 @@ export default function EditScheduleScreen() {
   ];
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? -30 : 1}
-    >
+    <View style={{ flex: 1 }}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <TouchableOpacity onPress={handleSave} hitSlop={20}>
+              <Text style={styles.readyButton}>{translations.done}</Text>
+            </TouchableOpacity>
+          ),
+        }}
+      />
       {medication && (
         <View style={styles.medicationItem}>
           <View style={styles.medicationIcon}>
@@ -234,78 +238,85 @@ export default function EditScheduleScreen() {
           </View>
         </View>
       )}
-
       <View style={styles.container}>
-        <View style={{ height: "85%" }}>
-          <Animated.FlatList
-            data={formItems}
-            keyExtractor={(item) => item.key}
-            ListHeaderComponent={
-              <View style={{ height: CENTER_SPACER - 100 }} />
-            }
-            ListFooterComponent={
-              <View style={{ height: CENTER_SPACER - 100 }} />
-            }
-            showsVerticalScrollIndicator={false}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-              { useNativeDriver: true }
-            )}
-            renderItem={({ item, index }) => {
-              const inputRange = [
-                (index - 1) * ITEM_HEIGHT,
-                index * ITEM_HEIGHT,
-                (index + 1) * ITEM_HEIGHT,
-              ];
-              const opacity = scrollY.interpolate({
-                inputRange,
-                outputRange: [0.5, 1, 0.5],
-                extrapolate: "clamp",
-              });
-
-              return (
-                <Animated.View style={[styles.itemContainer, { opacity }]}>
-                  <Text style={styles.label}>{item.label}</Text>
-                  {item.render()}
-                </Animated.View>
-              );
-            }}
-            getItemLayout={(_, index) => ({
-              length: ITEM_HEIGHT,
-              offset: ITEM_HEIGHT * index,
-              index,
-            })}
+        <KeyboardAwareScrollView
+          style={{ flex: 1 }}
+          keyboardOpeningTime={Number.MAX_SAFE_INTEGER} // ios bounce temp-fix
+          keyboardShouldPersistTaps="handled"
+          extraScrollHeight={40}
+          enableOnAndroid
+          enableResetScrollToCoords={false}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={32} // вызывает onScroll каждые 32 мс
+          onScroll={(e) => {
+            scrollY.setValue(e.nativeEvent.contentOffset.y);
+          }}
+          keyboardDismissMode="on-drag"
+        >
+          <Image
+            style={styles.pattern}
+            source={require("../../assets/images/background-pattern-top.png")}
           />
-          <LinearGradient
-            colors={["rgba(248, 249, 250, 0.5)", "rgba(255, 255, 255, 0)"]}
-            style={[styles.gradient, { top: 0, height: "20%" }]}
-            pointerEvents="none"
-          />
-        </View>
-        {!keyboardShown && (
-          <>
-            <View style={styles.buttonContainer}>
-              <Button
-                title={translations.saveEdit}
-                onPress={handleSave}
-                style={styles.saveButton}
-              />
-              <Button
-                title={translations.cancelEdit}
-                onPress={handleCancel}
-                variant="outline"
-              />
-            </View>
 
-            <LinearGradient
-              colors={["rgba(255, 255, 255, 0)", "rgba(248, 249, 250, 1)"]}
-              style={[styles.gradient, { bottom: 0, height: "30%" }]}
-              pointerEvents="none"
+          {formItems.map((item, index) => {
+            const inputRange = [
+              (index - 1) * ITEM_HEIGHT,
+              index * ITEM_HEIGHT,
+              (index + 1) * ITEM_HEIGHT,
+            ];
+
+            const opacity = scrollY.interpolate({
+              inputRange,
+              outputRange: [0.5, 1, 0.5],
+              extrapolate: "clamp",
+            });
+
+            return (
+              <Animated.View
+                key={item.key}
+                style={[styles.itemContainer, { opacity }]}
+              >
+                <Text style={styles.label}>{item.label}</Text>
+                {item.render()}
+              </Animated.View>
+            );
+          })}
+
+          <View style={styles.buttonContainer}>
+            <Button
+              title={translations.saveEdit}
+              onPress={handleSave}
+              style={styles.saveButton}
             />
-          </>
-        )}
+            <Button
+              title={translations.cancelEdit}
+              onPress={handleCancel}
+              variant="outline"
+            />
+          </View>
+
+          <Image
+            style={styles.pattern}
+            source={require("../../assets/images/background-pattern-bottom.png")}
+          />
+        </KeyboardAwareScrollView>
+
+        <LinearGradient
+          colors={["rgba(248, 249, 250, 0.5)", "rgba(255, 255, 255, 0)"]}
+          style={[styles.gradient, { top: 0, height: "20%" }]}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          colors={["rgba(255, 255, 255, 0)", "rgba(248, 249, 250, 0.5)"]}
+          style={[
+            styles.gradient,
+            { bottom: 0, height: "20%" },
+            keyboardShown && { opacity: 0 },
+          ]}
+          pointerEvents="none"
+        />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -331,11 +342,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   buttonContainer: {
-    position: "absolute",
-    bottom: 30,
-    left: 20,
-    right: 20,
-    zIndex: 2,
+    paddingHorizontal: 22,
+    justifyContent: "center",
+    marginVertical: 20,
   },
   saveButton: {
     marginBottom: 12,
@@ -372,5 +381,17 @@ const styles = StyleSheet.create({
   medicationDosage: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  pattern: {
+    height: CENTER_SPACER / 3,
+    width: "100%",
+    zIndex: 0,
+    opacity: 0.4,
+    marginTop: -5,
+  },
+  readyButton: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

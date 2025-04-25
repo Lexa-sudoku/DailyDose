@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
+  Platform,
 } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +21,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import {
   MedicationForm,
   MedicationForms,
+  pluralize,
   UnitsByForm,
 } from "@/constants/medication";
 import { Picker } from "@react-native-picker/picker";
@@ -36,7 +38,7 @@ export default function EditMedicationScreen() {
   const [form, setForm] = useState<MedicationForm>("tablet");
   const [trackStock, setTrackStock] = useState(false);
   const [dosage, setDosage] = useState("");
-  const [unit, setUnit] = useState(UnitsByForm[form][0]);
+  const [unit, setUnit] = useState(UnitsByForm[form][0][0]);
   const [instructions, setInstructions] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [remainingQuantity, setRemainingQuantity] = useState("");
@@ -63,7 +65,7 @@ export default function EditMedicationScreen() {
 
       setIsInitialized(true);
     }
-    setUnit(UnitsByForm[form][0]);
+    setUnit(UnitsByForm[form][0][0]);
   }, [medication, isInitialized, form]);
 
   const validateForm = () => {
@@ -150,7 +152,6 @@ export default function EditMedicationScreen() {
   if (!medication) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: translations.editMedication }} />
         <View style={styles.centerContainer}>
           <Text>{translations.noMedicationsFound}</Text>
         </View>
@@ -161,7 +162,6 @@ export default function EditMedicationScreen() {
   if (!isInitialized) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: translations.editMedication }} />
         <View style={styles.centerContainer}>
           <Text>{translations.loading}...</Text>
         </View>
@@ -190,6 +190,9 @@ export default function EditMedicationScreen() {
         enableOnAndroid
         extraScrollHeight={10}
         keyboardShouldPersistTaps="handled"
+        enableResetScrollToCoords={false}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
       >
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>
@@ -217,7 +220,7 @@ export default function EditMedicationScreen() {
             <Picker
               selectedValue={form}
               onValueChange={(value) => setForm(value)}
-              style={styles.picker}
+              style={[styles.picker, Platform.OS === "ios" && {height: 100}]}
             >
               {Object.entries(MedicationForms).map(([key, label]) => (
                 <Picker.Item key={key} label={label} value={key} />
@@ -248,7 +251,7 @@ export default function EditMedicationScreen() {
           />
 
           <View style={styles.trackRow}>
-            <Text style={styles.label}>Отслеживание наличия:</Text>
+            <Text style={styles.label}>{translations.trackStock}</Text>
             <Switch
               value={trackStock}
               onValueChange={() =>
@@ -277,7 +280,7 @@ export default function EditMedicationScreen() {
                   style={{ flex: 1, marginRight: 8 }}
                   accessoryViewID="totalQuantityEdit"
                   rightIcon={
-                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                    <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(totalQuantity))}</Text>
                   }
                 />
 
@@ -293,7 +296,7 @@ export default function EditMedicationScreen() {
                   style={{ flex: 1, marginLeft: 8 }}
                   accessoryViewID="remainingQuantityEdit"
                   rightIcon={
-                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                    <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(remainingQuantity))}</Text>
                   }
                 />
               </View>
@@ -310,7 +313,7 @@ export default function EditMedicationScreen() {
                 leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
                 accessoryViewID="lowStockThresholdEdit"
                 rightIcon={
-                  <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                  <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(lowStockThreshold))}</Text>
                 }
               />
             </>
@@ -470,7 +473,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   picker: {
-    height: 100,
     width: "100%",
     justifyContent: "center",
   },

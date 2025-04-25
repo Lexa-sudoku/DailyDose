@@ -88,6 +88,7 @@ export const translations = {
     "Вы уверены, что хотите удалить это лекарство? Это действие нельзя отменить.",
   back: "Назад",
   close: "Закрыть",
+  done: "Готово",
 
   // Courses
   addCourse: "Добавить курс",
@@ -283,12 +284,13 @@ export const translations = {
   valuePerUnit: "Kол-во вещества в одной",
   valuePerUnitAdd: "Какое количество вещества содержится в одной",
   addInstructions: "Добавьте инструкции",
-  setTrackStock: "Хотите отслеживать наличие?",
+  trackStock: "Отслеживание наличия",
+  setTrackStock: "Хотели бы отслеживать наличие?",
   yesPlease: "Да, хочу",
   noThanks: "Нет, спасибо",
   currentState: "Введите информацию о текущих запасах препарата",
   courseDuration: "Длительность курса",
-  courseFrequency: "Как часто во время курса необходимо принимать препарат?",
-  courseTimesByDay: "Сколько раз в день необходимо принимать препарат?",
+  courseFrequency: "Как часто необходимо будет принимать препарат?",
+  courseTimesByDay: "Сколько раз в день, в каком количестве?",
   courseMealRealation: "Укажите зависимость от приемов пищи",
 };

@@ -16,6 +16,7 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { colors } from "@/constants/colors";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { translations } from "@/constants/translations";
 
 interface InputProps {
   label?: string;
@@ -40,7 +41,6 @@ interface InputProps {
 
 export const Input: React.FC<InputProps> = ({
   label,
-  mark,
   desc,
   value,
   onChangeText,
@@ -71,7 +71,6 @@ export const Input: React.FC<InputProps> = ({
           {label && (
             <Text style={styles.label}>
               {label}
-              {mark && <Text style={styles.mark}>{mark}</Text>}
               {desc && <Text style={styles.desc}>{desc}</Text>}
             </Text>
           )}
@@ -168,7 +167,7 @@ export const Input: React.FC<InputProps> = ({
             >
               <Button
                 onPress={Keyboard.dismiss}
-                title="Готово"
+                title={translations.done}
                 color={colors.white}
               />
             </View>
@@ -250,12 +249,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.error,
     marginTop: 4,
-  },
-  mark: {
-    color: colors.primary,
-    fontWeight: "700",
-    fontSize: 16,
-    marginLeft: 8,
   },
   desc: {
     fontSize: 14,

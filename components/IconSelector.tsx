@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
 } from "react-native";
 import { colors } from "@/constants/colors";
 import { MedicationIcon } from "./MedicationIcon";
@@ -27,17 +26,17 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
 }) => {
   const icons = [
     "Pill",
-    "Stethoscope",
     "Heart",
     "Activity",
     "Droplet",
-    "Thermometer",
     "Syringe",
-    "Bandage",
-    "Brain",
     "Eye",
-    "Ear",
-    "Bone",
+    // "Stethoscope",
+    // "Thermometer",
+    // "Bandage",
+    // "Brain",
+    // "Ear",
+    // "Bone",
   ];
 
   const iconColors = [
@@ -55,36 +54,36 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
       {variant === "edit" && (
         <Text style={styles.sectionTitle}>{translations.selectIcon}</Text>
       )}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View
-          style={[
-            styles.iconsContainer,
-            variant === "edit" && { marginVertical: 16 },
-          ]}
-        >
-          {icons.map((iconName) => (
-            <TouchableOpacity
-              key={iconName}
-              style={[
-                styles.iconButton,
-                selectedIcon === iconName && {
-                  backgroundColor: selectedColor,
-                  borderColor: selectedColor,
-                },
-              ]}
-              onPress={() => onSelectIcon(iconName)}
-            >
-              <MedicationIcon
-                iconName={iconName}
-                color={selectedIcon === iconName ? colors.white : selectedColor}
-                size={25}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+      <View
+        style={[
+          styles.iconsContainer,
+          variant === "edit" && { marginVertical: 16 },
+        ]}
+      >
+        {icons.map((iconName) => (
+          <TouchableOpacity
+            key={iconName}
+            style={[
+              styles.iconButton,
+              selectedIcon === iconName && {
+                backgroundColor: selectedColor,
+                borderColor: selectedColor,
+              },
+            ]}
+            onPress={() => onSelectIcon(iconName)}
+          >
+            <MedicationIcon
+              iconName={iconName}
+              color={selectedIcon === iconName ? colors.white : selectedColor}
+              size={25}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
 
-      {variant === "add" && <Text style={styles.colorTitle}>{translations.andColor}</Text>}
+      {variant === "add" && (
+        <Text style={styles.colorTitle}>{translations.andColor}</Text>
+      )}
       {variant === "edit" && (
         <Text style={styles.sectionTitle}>{translations.iconColor}</Text>
       )}
@@ -123,6 +122,7 @@ const styles = StyleSheet.create({
   iconsContainer: {
     flexDirection: "row",
     flexWrap: "nowrap",
+    justifyContent: "space-between",
   },
   iconButton: {
     width: 50,
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightGray,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 13,
     borderWidth: 2,
     borderColor: "transparent",
   },

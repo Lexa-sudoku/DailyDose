@@ -6,14 +6,16 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
-  KeyboardAvoidingView,
+  Image,
+  TouchableOpacity,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import {
   MedicationForm,
   MedicationForms,
+  pluralize,
   UnitsByForm,
 } from "@/constants/medication";
 import { Input } from "@/components/Input";
@@ -24,6 +26,7 @@ import { translations } from "@/constants/translations";
 import { useMedicationStore } from "@/store/medication-store";
 import { IconSelector } from "@/components/IconSelector";
 import { useKeyboard } from "@/hooks/useKeyboard";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const ITEM_HEIGHT = 170;
@@ -37,7 +40,7 @@ export default function AddMedicationScreen() {
   const [form, setForm] = useState<MedicationForm>("tablet");
   const [trackStock, setTrackStock] = useState(false);
   const [dosage, setDosage] = useState("");
-  const [unit, setUnit] = useState(UnitsByForm[form][0]);
+  const [unit, setUnit] = useState(UnitsByForm[form][0][0]);
   const [instructions, setInstructions] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [lowStockThreshold, setLowStockThreshold] = useState("");
@@ -49,7 +52,7 @@ export default function AddMedicationScreen() {
   const { keyboardShown } = useKeyboard();
 
   useEffect(() => {
-    setUnit(UnitsByForm[form][0]);
+    setUnit(UnitsByForm[form][0][0]);
   }, [form]);
 
   const validateForm = () => {
@@ -156,7 +159,7 @@ export default function AddMedicationScreen() {
               <Input
                 value={dosage}
                 onChangeText={(text) => setDosage(text.replaceAll(",", "."))}
-                placeholder="20 мг"
+                placeholder="20 мг    * опционально"
                 error={errors.dosage}
               />
             ),
@@ -170,7 +173,7 @@ export default function AddMedicationScreen() {
         <Input
           value={instructions}
           onChangeText={setInstructions}
-          placeholder="Принимать с водой"
+          placeholder="Принимать с водой    * опционально"
           multiline
           numberOfLines={3}
           accessoryViewID="instructions"
@@ -225,7 +228,7 @@ export default function AddMedicationScreen() {
                   error={errors.totalQuantity}
                   style={{ marginRight: 8 }}
                   rightIcon={
-                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                    <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(totalQuantity))}</Text>
                   }
                   accessoryViewID="totalQuantity"
                 />
@@ -241,7 +244,7 @@ export default function AddMedicationScreen() {
                   style={{ marginLeft: 8 }}
                   leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
                   rightIcon={
-                    <Text style={{ color: colors.darkGray }}>{unit}</Text>
+                    <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(lowStockThreshold))}</Text>
                   }
                   accessoryViewID="lowStockThreshold"
                 />
@@ -253,81 +256,92 @@ export default function AddMedicationScreen() {
   ];
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 1}
-    >
-      <View style={styles.container}>
-        <View style={{ height: "85%" }}>
-          <Animated.FlatList
-            data={formItems}
-            keyExtractor={(item) => item.key}
-            ListHeaderComponent={<View style={{ height: CENTER_SPACER }} />}
-            ListFooterComponent={
-              <View style={{ height: CENTER_SPACER - 40 }} />
-            }
-            showsVerticalScrollIndicator={false}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-              { useNativeDriver: true }
-            )}
-            renderItem={({ item, index }) => {
-              const inputRange = [
-                (index - 1) * ITEM_HEIGHT,
-                index * ITEM_HEIGHT,
-                (index + 1) * ITEM_HEIGHT,
-              ];
-              const opacity = scrollY.interpolate({
+    <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <TouchableOpacity onPress={handleSave} hitSlop={20}>
+              <Text style={styles.readyButton}>{translations.done}</Text>
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        extraScrollHeight={40}
+        enableOnAndroid
+        enableResetScrollToCoords={false}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={32} // вызывает onScroll каждые 32 мс
+        onScroll={(e) => {
+          scrollY.setValue(e.nativeEvent.contentOffset.y);
+        }}
+        keyboardDismissMode="on-drag"
+      >
+        <Image
+          style={styles.pattern}
+          source={require("../../assets/images/background-pattern-top.png")}
+        />
+
+        {formItems.map((item, index) => {
+          const inputRange = [
+            (index - 1) * ITEM_HEIGHT,
+            index * ITEM_HEIGHT,
+            (index + 1) * ITEM_HEIGHT,
+          ];
+
+          const opacity = scrollY.interpolate({
                 inputRange,
                 outputRange: [0.5, 1, 0.5],
                 extrapolate: "clamp",
               });
 
-              return (
-                <Animated.View style={[styles.itemContainer, { opacity }]}>
-                  <Text style={styles.label}>{item.label}</Text>
-                  {item.render()}
-                </Animated.View>
-              );
-            }}
-            getItemLayout={(_, index) => ({
-              length: ITEM_HEIGHT,
-              offset: ITEM_HEIGHT * index,
-              index,
-            })}
-          />
+          return (
+            <Animated.View
+              key={item.key}
+              style={[styles.itemContainer, { opacity }]}
+            >
+              <Text style={styles.label}>{item.label}</Text>
+              {item.render()}
+            </Animated.View>
+          );
+        })}
 
-          <LinearGradient
-            colors={["rgba(248, 249, 250, 0.5)", "rgba(255, 255, 255, 0)"]}
-            style={[styles.gradient, { top: 0, height: "30%" }]}
-            pointerEvents="none"
+        <View style={styles.buttonContainer}>
+          <Button
+            title={translations.saveMedication}
+            onPress={handleSave}
+            style={styles.saveButton}
+          />
+          <Button
+            title={translations.cancel}
+            onPress={() => router.back()}
+            variant="outline"
           />
         </View>
 
-        {!keyboardShown && (
-          <>
-            <View style={styles.buttonContainer}>
-              <Button
-                title={translations.saveMedication}
-                onPress={handleSave}
-                style={styles.saveButton}
-              />
-              <Button
-                title={translations.cancel}
-                onPress={() => router.back()}
-                variant="outline"
-              />
-            </View>
-            <LinearGradient
-              colors={["rgba(255, 255, 255, 0)", "rgba(248, 249, 250, 1)"]}
-              style={[styles.gradient, { bottom: 0, height: "20%" }]}
-              pointerEvents="none"
-            />
-          </>
-        )}
-      </View>
-    </KeyboardAvoidingView>
+        <Image
+          style={styles.pattern}
+          source={require("../../assets/images/background-pattern-bottom.png")}
+        />
+      </KeyboardAwareScrollView>
+
+      <LinearGradient
+        colors={["rgba(248, 249, 250, 0.5)", "rgba(255, 255, 255, 0)"]}
+        style={[styles.gradient, { top: 0, height: "20%" }]}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={["rgba(255, 255, 255, 0)", "rgba(248, 249, 250, 0.5)"]}
+        style={[
+          styles.gradient,
+          { bottom: 0, height: "20%" },
+          keyboardShown && { opacity: 0 },
+        ]}
+        pointerEvents="none"
+      />
+    </View>
   );
 }
 
@@ -388,13 +402,23 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   buttonContainer: {
-    position: "absolute",
-    bottom: 30,
-    left: 20,
-    right: 20,
-    zIndex: 2,
+    paddingHorizontal: 22,
+    justifyContent: "center",
+    marginVertical: 20,
   },
   saveButton: {
     marginBottom: 12,
+  },
+  pattern: {
+    height: CENTER_SPACER,
+    width: "100%",
+    zIndex: 0,
+    opacity: 0.2,
+    marginTop: -5,
+  },
+  readyButton: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

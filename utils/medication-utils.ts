@@ -15,7 +15,7 @@ export const convertUnit = (
   medDosagePerUnit?: string
 ): number => {
   const units = UnitsByForm[form];
-  const defaultUnit = units[0];
+  const defaultUnit = units[0][0];
 
   // Если изначально единицы совпадают — возвращаем значение
   if (fromUnit === defaultUnit) return value;

@@ -23,6 +23,8 @@ export default function AddCourseScreen() {
   }>();
   const { medicationId } = params;
 
+  console.log(medicationId, params.medicationId)
+
   const [selectedMedicationId] = useState<string | undefined>(medicationId);
   const [schedules, setSchedules] = useState<MedicationSchedule[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -100,7 +102,7 @@ export default function AddCourseScreen() {
 
   const goToEditSchedule = (id: string) => {
     if (!validateMedication()) return;
-    router.replace({ pathname: "/courses/[id]", params: { id } });
+    router.replace(`/courses/${id}`);
   };
 
   const addScheduleCourse = () => {

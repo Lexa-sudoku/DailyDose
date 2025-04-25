@@ -1,6 +1,3 @@
-// todo наверное редактирование времени напоминания стоит перенести для каждого расписания/лекарства отдельно
-// сделать чтоб работало
-
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Switch, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

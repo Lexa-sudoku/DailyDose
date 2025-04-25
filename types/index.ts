@@ -47,7 +47,7 @@ export type Status = "taken" | "missed" | "pending";
 export interface MedicationSchedule {
   id: string;
   medicationId: string;
-  times: ScheduleTimeItem[]; // HH:MM format
+  times: ScheduleTimeItem[]; // { HH:MM, dosage, unit }
   frequency: FrequencyType;
   days: number[]; // 1-7 (Monday-Sunday)
   dates: string[]; // YYYY-MM-DD format

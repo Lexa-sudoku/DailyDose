@@ -27,10 +27,7 @@ export default function SelectMedicationScreen() {
   );
 
   const handleSelectMedication = (medicationId: string) => {
-    router.replace({
-      pathname: "/courses/add", 
-      params: { medicationId },
-    });
+    router.replace(`/courses/add?medicationId=${medicationId}`);
   };
 
   const navigateToAddMedication = () => {

@@ -42,7 +42,7 @@ export async function scheduleMedicationReminder(
   // Создаем дату и время напоминания
   const scheduledDateTime = formatDateTime(date, time);
   const reminderTime = new Date(
-    scheduledDateTime.getTime() - minutesBefore * 60 * 1000, // todo понять что за время тут считается
+    scheduledDateTime.getTime() - minutesBefore * 60 * 1000,
   );
 
   // Если время напоминания уже прошло, не планируем уведомление
@@ -59,7 +59,10 @@ export async function scheduleMedicationReminder(
       priority: Notifications.AndroidNotificationPriority.HIGH,
       data: { medicationName, dosage, date, time },
     },
-    trigger: null, // todo вместо null надо понять как корректно вставить ReminderTime
+    trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.DATE,
+    date: reminderTime,
+  },
   });
 
   return identifier;

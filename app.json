@@ -17,15 +17,24 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff",
-        "softwareKeyboardLayoutMode": "pan"
-      }
+      "softwareKeyboardLayoutMode": "pan",
+      "package": "com.venefjka.dailydose"
     },
-    "plugins": ["expo-router", "expo-notifications"],
+    "plugins": [
+      "expo-router",
+      "expo-notifications"
+    ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "11e79740-c547-404f-b4cd-281e6139c61b"
+      }
+    },
+    "owner": "venefjka"
   }
 }

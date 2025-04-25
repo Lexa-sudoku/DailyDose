@@ -12,7 +12,7 @@ import { colors } from "@/constants/colors";
 import { Input } from "./Input";
 import { translations } from "@/constants/translations";
 import { Picker } from "@react-native-picker/picker";
-import { UnitsByForm, MedicationForm } from "@/constants/medication";
+import { UnitsByForm, MedicationForm, pluralize } from "@/constants/medication";
 
 interface ScheduleTimesProps {
   times: {
@@ -50,12 +50,12 @@ export const ScheduleTimes: React.FC<ScheduleTimesProps> = ({
   const handleIOSPicker = (index: number) => {
     ActionSheetIOS.showActionSheetWithOptions(
       {
-        options: [...unitOptions, translations.cancel],
+        options: [...unitOptions.map((u) => u[0]), translations.cancel],
         cancelButtonIndex: unitOptions.length,
       },
       (selectedIndex) => {
         if (selectedIndex < unitOptions.length) {
-          onUnitChange(index, unitOptions[selectedIndex]);
+          onUnitChange(index, unitOptions[selectedIndex][0]);
         }
       }
     );
@@ -64,77 +64,96 @@ export const ScheduleTimes: React.FC<ScheduleTimesProps> = ({
   useEffect(() => {
     times.forEach((item, index) => {
       if (!item.unit && unitOptions.length > 0) {
-        onUnitChange(index, unitOptions[0]);
+        onUnitChange(index, unitOptions[0][0]);
       }
     });
   }, [onUnitChange, times, unitOptions]);
 
+  const formatTime = (text: string) => {
+    const cleaned = text.replace(/\D/g, "");
+    const limited = cleaned.slice(0, 4);
+    if (limited.length >= 3) {
+      return `${limited.slice(0, 2)}:${limited.slice(2)}`;
+    }
+    return limited;
+  };
+
   return (
     <View style={styles.container}>
-      {times.map((item, index) => (
-        <View key={index}>
-          <View style={styles.scheduleRow}>
-            <Text style={styles.textRow}>
-              {[translations.intake, " ", index + 1]}:
-            </Text>
-            <Input
-              value={item.time}
-              onChangeText={(text) => onTimeChange(index, text)}
-              placeholder="HH:MM"
-              leftIcon={<Clock size={20} color={colors.darkGray} />}
-              style={styles.timeInput}
-            />
-            {isRemovable && (
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => onRemoveTime(index)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Trash2 size={20} color={colors.error} />
-              </TouchableOpacity>
-            )}
-          </View>
+      {times.map((item, index) => {
+        const unitForm = unitOptions.find((u) => u.includes(item.unit));
+        const dosage = parseFloat(item.dosage);
+        const displayUnit = unitForm
+          ? pluralize(unitForm, isNaN(dosage) ? 1 : dosage)
+          : item.unit;
 
-          <View style={styles.doseRow}>
-            <Input
-              value={item.dosage}
-              onChangeText={(text) =>
-                onDosageChange(index, text.replace(",", "."))
-              }
-              placeholder="Дозировка"
-              style={styles.dosageInput}
-              keyboardType="numeric"
-              accessoryViewID={`dosageByTime${index}`}
-            />
-            {Platform.OS === "ios" ? (
-              <TouchableOpacity
-                style={styles.iosPickerButton}
-                onPress={() => handleIOSPicker(index)}
-              >
-                <Text style={styles.iosPickerText}>
-                  {item.unit || "Выбрать"}
-                </Text>
-                <ChevronDown size={16} color={colors.darkGray} />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={item.unit}
-                  style={styles.unitPicker}
-                  onValueChange={(value) => onUnitChange(index, value)}
+        return (
+          <View key={index}>
+            <View style={styles.scheduleRow}>
+              <Text style={styles.textRow}>
+                {[translations.intake, " ", index + 1]}:
+              </Text>
+              <Input
+                value={item.time}
+                onChangeText={(text) => onTimeChange(index, formatTime(text))}
+                placeholder="HH:MM"
+                keyboardType="numeric"
+                leftIcon={<Clock size={20} color={colors.darkGray} />}
+                style={styles.timeInput}
+                accessoryViewID={`time${index}`}
+              />
+              {isRemovable && (
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => onRemoveTime(index)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  {unitOptions.map((unit) => (
-                    <Picker.Item label={unit} value={unit} key={unit} />
-                  ))}
-                </Picker>
-              </View>
+                  <Trash2 size={20} color={colors.error} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.doseRow}>
+              <Input
+                value={item.dosage}
+                onChangeText={(text) =>
+                  onDosageChange(index, text.replace(",", "."))
+                }
+                placeholder="Дозировка"
+                style={styles.dosageInput}
+                keyboardType="numeric"
+                accessoryViewID={`dosageByTime${index}`}
+              />
+              {Platform.OS === "ios" ? (
+                <TouchableOpacity
+                  style={styles.iosPickerButton}
+                  onPress={() => handleIOSPicker(index)}
+                >
+                  <Text style={styles.iosPickerText}>
+                    {unitForm ? displayUnit : "Выбрать"}
+                  </Text>
+                  <ChevronDown size={16} color={colors.darkGray} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.pickerWrapper}>
+                  <Picker
+                    selectedValue={item.unit}
+                    style={styles.unitPicker}
+                    onValueChange={(value) => onUnitChange(index, value)}
+                  >
+                    {unitOptions.map((unit, i) => (
+                      <Picker.Item label={unit[0]} value={unit[0]} key={i} />
+                    ))}
+                  </Picker>
+                </View>
+              )}
+            </View>
+            {Array.isArray(errors.time) && errors.time[index] && (
+              <Text style={styles.errorText}>{errors.time[index]}</Text>
             )}
           </View>
-          {Array.isArray(errors.time) && errors.time[index] && (
-            <Text style={styles.errorText}>{errors.time[index]}</Text>
-          )}
-        </View>
-      ))}
+        );
+      })}
 
       <TouchableOpacity onPress={onAddTime} style={styles.addTimeButton}>
         <Plus size={20} color={colors.primary} />
@@ -195,12 +214,12 @@ const styles = StyleSheet.create({
     height: 50,
   },
   unitPicker: {
-    flex: 1,
+    minHeight: 50,
     borderWidth: 0,
     borderRadius: 12,
     paddingHorizontal: 12,
     alignItems: "center",
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text,
     borderColor: colors.border,
   },

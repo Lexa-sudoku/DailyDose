@@ -8,6 +8,7 @@ import { translations } from "@/constants/translations";
 import { MedicationIcon } from "./MedicationIcon";
 import { Button } from "./Button";
 import { LinearGradient } from "expo-linear-gradient";
+import { getUnitDisplayFromRaw } from "@/constants/medication";
 
 interface MedicationCardProps {
   selectedDate: Date;
@@ -32,7 +33,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
     iconColor,
     instructions,
     dosageByTime,
-    unit
+    unit,
   } = medication;
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -106,7 +107,11 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
               <View>
                 <Text style={styles.medicationName}>{name}</Text>
                 <Text style={styles.dosage}>
-                  {getMealRelationText(mealRelation) + ", " + dosageByTime + " " + unit}
+                  {getMealRelationText(mealRelation) +
+                    ", " +
+                    dosageByTime +
+                    " " +
+                    getUnitDisplayFromRaw(unit, parseInt(dosageByTime))}
                 </Text>
               </View>
             </View>
@@ -131,7 +136,11 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
               />
               <View style={styles.modalHeaderText}>
                 <Text style={styles.modalTitle}>{name}</Text>
-                <Text style={styles.modalSubtitle}>{dosageByTime + ' ' + unit}</Text>
+                <Text style={styles.modalSubtitle}>
+                  {dosageByTime +
+                    " " +
+                    getUnitDisplayFromRaw(unit, parseInt(dosageByTime))}
+                </Text>
               </View>
             </View>
 
@@ -271,7 +280,7 @@ const styles = StyleSheet.create({
   statusIndicator: {
     flexDirection: "row",
     paddingHorizontal: 16,
-    paddingVertical:16,
+    paddingVertical: 16,
     borderRadius: 30,
     marginBottom: 12,
   },

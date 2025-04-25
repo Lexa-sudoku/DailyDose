@@ -4,7 +4,7 @@ import { AlertTriangle, Edit, Plus } from "lucide-react-native";
 import { colors } from "@/constants/colors";
 import { Medication } from "@/types";
 import { MedicationIcon } from "./MedicationIcon";
-import { MedicationForms } from "@/constants/medication";
+import { MedicationForms, pluralize, UnitsByForm } from "@/constants/medication";
 import { translations } from "@/constants/translations";
 
 interface MedicationInventoryCardProps {
@@ -26,7 +26,6 @@ export const MedicationInventoryCard: React.FC<
     iconName,
     iconColor,
     trackStock,
-    unit,
   } = medication;
 
   const isLowStock = trackStock && remainingQuantity <= lowStockThreshold;
@@ -76,7 +75,7 @@ export const MedicationInventoryCard: React.FC<
           <View style={styles.inventoryInfo}>
             <Text style={styles.inventoryText}>
               {translations.remainingQuantity} {remainingQuantity}{" "}
-              {translations.outOf} {totalQuantity} {unit}
+              {translations.outOf} {totalQuantity} {pluralize(UnitsByForm[form][0], totalQuantity)}
             </Text>
 
             {isLowStock && (

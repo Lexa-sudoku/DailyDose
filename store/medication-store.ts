@@ -579,11 +579,12 @@ export const useMedicationStore = create<MedicationState>()(
         return Object.entries(medicationAdherence)
           .map(([medicationId, stats]) => {
             const intake = intakes.find(
-              (med) => med.id === medicationId
+              (med) => med.medicationId === medicationId
             );
             return {
               medicationId,
-              medicationName: intake?.medicationName || translations.unknownMedication,
+              medicationName:
+                intake?.medicationName || translations.unknownMedication,
               adherenceRate:
                 stats.total > 0 ? (stats.taken / stats.total) * 100 : 0,
             };
