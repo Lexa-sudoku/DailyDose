@@ -37,7 +37,7 @@ export default function EditMedicationScreen() {
   const [name, setName] = useState("");
   const [form, setForm] = useState<MedicationForm>("tablet");
   const [trackStock, setTrackStock] = useState(false);
-  const [dosage, setDosage] = useState("");
+  const [dosagePerUnit, setDosagePerUnit] = useState("");
   const [unit, setUnit] = useState(UnitsByForm[form][0][0]);
   const [instructions, setInstructions] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
@@ -54,7 +54,7 @@ export default function EditMedicationScreen() {
       setName(medication.name);
       setForm(medication.form);
       setTrackStock(medication.trackStock);
-      setDosage(medication.dosage || "");
+      setDosagePerUnit(medication.dosagePerUnit || "");
       setUnit(medication.unit);
       setInstructions(medication.instructions);
       setTotalQuantity(medication.totalQuantity.toString());
@@ -114,7 +114,7 @@ export default function EditMedicationScreen() {
     updateMedication(id, {
       name,
       form,
-      dosage,
+      dosagePerUnit,
       unit,
       instructions,
       totalQuantity: Number(totalQuantity),
@@ -186,6 +186,7 @@ export default function EditMedicationScreen() {
 
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
+        keyboardOpeningTime={Number.MAX_SAFE_INTEGER} // ios bounce temp-fix
         contentContainerStyle={styles.scrollContent}
         enableOnAndroid
         extraScrollHeight={10}
@@ -215,12 +216,14 @@ export default function EditMedicationScreen() {
             error={errors.name}
           />
 
-          <Text style={[styles.label, { marginBottom: 8 }]}>{translations.medicationForm}</Text>
+          <Text style={[styles.label, { marginBottom: 8 }]}>
+            {translations.medicationForm}
+          </Text>
           <View style={styles.pickerWrapper}>
             <Picker
               selectedValue={form}
               onValueChange={(value) => setForm(value)}
-              style={[styles.picker, Platform.OS === "ios" && {height: 100}]}
+              style={[styles.picker, Platform.OS === "ios" && { height: 100 }]}
             >
               {Object.entries(MedicationForms).map(([key, label]) => (
                 <Picker.Item key={key} label={label} value={key} />
@@ -232,8 +235,8 @@ export default function EditMedicationScreen() {
             <Input
               label={`${translations.valuePerUnit} ${unit.slice(0, -1)}е`}
               desc={`  ${translations.optional}`}
-              value={dosage}
-              onChangeText={setDosage}
+              value={dosagePerUnit}
+              onChangeText={setDosagePerUnit}
               placeholder="20 мг"
               error={errors.dosage}
             />
@@ -280,7 +283,9 @@ export default function EditMedicationScreen() {
                   style={{ flex: 1, marginRight: 8 }}
                   accessoryViewID="totalQuantityEdit"
                   rightIcon={
-                    <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(totalQuantity))}</Text>
+                    <Text style={{ color: colors.darkGray }}>
+                      {pluralize(UnitsByForm[form][0], parseInt(totalQuantity))}
+                    </Text>
                   }
                 />
 
@@ -296,7 +301,12 @@ export default function EditMedicationScreen() {
                   style={{ flex: 1, marginLeft: 8 }}
                   accessoryViewID="remainingQuantityEdit"
                   rightIcon={
-                    <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(remainingQuantity))}</Text>
+                    <Text style={{ color: colors.darkGray }}>
+                      {pluralize(
+                        UnitsByForm[form][0],
+                        parseInt(remainingQuantity)
+                      )}
+                    </Text>
                   }
                 />
               </View>
@@ -313,7 +323,12 @@ export default function EditMedicationScreen() {
                 leftIcon={<AlertCircle size={20} color={colors.darkGray} />}
                 accessoryViewID="lowStockThresholdEdit"
                 rightIcon={
-                  <Text style={{ color: colors.darkGray }}>{pluralize(UnitsByForm[form][0], parseInt(lowStockThreshold))}</Text>
+                  <Text style={{ color: colors.darkGray }}>
+                    {pluralize(
+                      UnitsByForm[form][0],
+                      parseInt(lowStockThreshold)
+                    )}
+                  </Text>
                 }
               />
             </>

@@ -102,7 +102,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     style={[
                       styles.dayNumber,
                       isSelected && styles.selectedDayText,
-                      (isToday && !isSelected) && styles.todayText,
+                      isToday && !isSelected && styles.todayText,
                     ]}
                   >
                     {format(day, "d")}
@@ -173,6 +173,7 @@ const styles = StyleSheet.create({
   },
   selectedDayNumberContainer: {
     backgroundColor: colors.primary,
+    borderRadius: 18,
   },
   dayNumber: {
     fontSize: 16,

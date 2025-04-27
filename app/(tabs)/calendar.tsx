@@ -79,7 +79,7 @@ export default function CalendarScreen() {
     scheduleId: string,
     medicationId: string,
     time: string,
-    dosage: string,
+    dosageByTime: string,
     unit: string
   ) => {
     recordIntake(
@@ -88,7 +88,7 @@ export default function CalendarScreen() {
       formattedDate,
       time,
       status,
-      dosage,
+      dosageByTime,
       unit
     );
   };

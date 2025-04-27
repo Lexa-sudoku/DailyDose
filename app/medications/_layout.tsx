@@ -1,6 +1,7 @@
 import { BackButton } from "@/components/BackButton";
 import { translations } from "@/constants/translations";
 import { Stack } from "expo-router";
+import { Platform } from "react-native";
 
 export default function MedicationsLayout() {
   return (
@@ -10,7 +11,7 @@ export default function MedicationsLayout() {
         options={{
           headerShown: true,
           title: translations.addMedication,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
       <Stack.Screen
@@ -18,7 +19,7 @@ export default function MedicationsLayout() {
         options={{
           headerShown: true,
           title: translations.editMedication,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
     </Stack>

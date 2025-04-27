@@ -25,21 +25,14 @@ export const EditMedicationModal: React.FC<Props> = ({
     if (!isNaN(additional)) {
       updateMedication(medication.id, {
         remainingQuantity: medication.remainingQuantity + additional,
+        totalQuantity: medication.remainingQuantity + additional,
       });
-      if (
-        medication.totalQuantity <
-        medication.remainingQuantity + additional
-      ) {
-        updateMedication(medication.id, {
-          totalQuantity: medication.totalQuantity + additional,
-        });
-      }
     }
     onClose();
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <Modal visible={visible} animationType="fade" transparent={true}>
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>{translations.addStock}</Text>
@@ -49,7 +42,9 @@ export const EditMedicationModal: React.FC<Props> = ({
             value={quantityToAdd}
             onChangeText={setQuantityToAdd}
             placeholder="10"
-            rightIcon={<Text style={{ color: colors.darkGray }}>{medication.unit}</Text>}
+            rightIcon={
+              <Text style={{ color: colors.darkGray }}>{medication.unit}</Text>
+            }
             accessoryViewID="stockAdd"
           />
           <View style={styles.buttons}>

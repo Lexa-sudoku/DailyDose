@@ -177,7 +177,7 @@ export default function AddCourseScreen() {
                   {selectedMedication.name}
                 </Text>
                 <Text style={styles.selectedMedicationDosage}>
-                  {selectedMedication.dosage}
+                  {selectedMedication.dosagePerUnit}
                 </Text>
               </View>
             ) : (

@@ -59,7 +59,7 @@ export default function ProfileScreen() {
     icon: React.ReactNode,
     title: string,
     onPress: () => void,
-    showBorder = true,
+    showBorder = true
   ) => (
     <TouchableOpacity
       style={[styles.menuItem, showBorder && styles.menuItemBorder]}
@@ -138,26 +138,26 @@ export default function ProfileScreen() {
           {renderMenuItem(
             <Bell size={20} color={colors.primary} />,
             translations.notifications,
-            navigateToNotifications,
+            navigateToNotifications
           )}
 
           {renderMenuItem(
             <PieChart size={20} color={colors.primary} />,
             translations.statistics,
-            navigateToStatistics,
+            navigateToStatistics
           )}
 
           {renderMenuItem(
             <HelpCircle size={20} color={colors.primary} />,
             translations.helpAndSupport,
-            navigateToHelp,
+            navigateToHelp
           )}
 
           {renderMenuItem(
             <Shield size={20} color={colors.primary} />,
             translations.privacySecurity,
             () => {},
-            false,
+            false
           )}
         </View>
 

@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { translations } from "@/constants/translations";
 import { BackButton } from "@/components/BackButton";
+import { Platform } from "react-native";
 
 export default function ProfileLayout() {
   return (
@@ -10,7 +11,7 @@ export default function ProfileLayout() {
         options={{
           headerShown: true,
           title: translations.editProfile,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
       <Stack.Screen
@@ -18,7 +19,7 @@ export default function ProfileLayout() {
         options={{
           headerShown: true,
           title: translations.notifications,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
       <Stack.Screen
@@ -26,7 +27,7 @@ export default function ProfileLayout() {
         options={{
           headerShown: true,
           title: translations.statistics,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
       <Stack.Screen
@@ -34,7 +35,7 @@ export default function ProfileLayout() {
         options={{
           headerShown: true,
           title: translations.statistics,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
     </Stack>

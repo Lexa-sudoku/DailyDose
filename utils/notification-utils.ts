@@ -6,6 +6,7 @@ import { useNotificationStore } from "@/store/notification-store";
 import { useMedicationStore } from "@/store/medication-store";
 import { getCourseActiveDates } from "./course-utils";
 import { translations } from "@/constants/translations";
+import { getUnitDisplayFromRaw } from "@/constants/medication";
 
 export async function registerForPushNotificationsAsync() {
   let token;
@@ -28,7 +29,7 @@ export async function registerForPushNotificationsAsync() {
   }
 
   if (finalStatus !== "granted") {
-    console.log("Failed to get push token for push notification!");
+    console.warn("Failed to get push token for push notification!");
     return;
   }
 
@@ -77,7 +78,7 @@ export async function scheduleCourseNotifications(
       const identifier = await Notifications.scheduleNotificationAsync({
         content: {
           title: `Пора принять ${medicationName}`,
-          body: `Примите ${dosage} ${unit} в ${time}`,
+          body: `Примите ${dosage} ${getUnitDisplayFromRaw(unit, Number(dosage))} в ${time}`,
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
           data: { medicationName, dosage, unit, date, time },
@@ -96,17 +97,22 @@ export async function scheduleCourseNotifications(
 
 export async function scheduleLowStockReminder(
   medicationName: string,
-  remainingQuantity: number
+  remainingQuantity: number,
+  unit: string
 ) {
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Низкий запас лекарства",
-      body: `У вас осталось только ${remainingQuantity} единиц ${medicationName}. Пора пополнить запас.`,
+      title: "Пора пополнить запас",
+      body: `У вас осталось всего ${remainingQuantity} ${unit} ${medicationName}`,
       sound: true,
       priority: Notifications.AndroidNotificationPriority.HIGH,
       data: { medicationName, remainingQuantity },
     },
-    trigger: null, // Немедленное уведомление
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 1,
+      repeats: false,
+    },
   });
 
   return identifier;

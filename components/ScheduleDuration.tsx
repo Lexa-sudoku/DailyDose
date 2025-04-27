@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   durationTypeContainer: {
     flexDirection: "row",
     marginBottom: 16,
-    gap: 16
+    gap: 16,
   },
   durationTypeButton: {
     flex: 1,

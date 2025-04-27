@@ -91,7 +91,7 @@ export const Input: React.FC<InputProps> = ({
               style={[
                 styles.input,
                 leftIcon ? styles.inputWithLeftIcon : null,
-                (rightIcon || secureTextEntry) ? styles.inputWithRightIcon : null,
+                rightIcon || secureTextEntry ? styles.inputWithRightIcon : null,
                 multiline ? styles.textMultiline : null,
                 inputStyle,
               ]}

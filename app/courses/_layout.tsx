@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { translations } from "@/constants/translations";
 import { BackButton } from "@/components/BackButton";
 import React from "react";
+import { Platform } from "react-native";
 
 export default function CoursesLayout() {
   return (
@@ -11,7 +12,7 @@ export default function CoursesLayout() {
         options={{
           headerShown: true,
           title: translations.addCourse,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
       <Stack.Screen
@@ -19,7 +20,7 @@ export default function CoursesLayout() {
         options={{
           headerShown: true,
           title: translations.selectMedication,
-          headerLeft: () => <BackButton />,
+          headerLeft: Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
       <Stack.Screen
@@ -27,7 +28,7 @@ export default function CoursesLayout() {
         options={{
           headerShown: true,
           title: translations.editCourse,
-          headerLeft: () => <BackButton />,
+          headerLeft:  Platform.OS === "ios" ? () => <BackButton /> : undefined,
         }}
       />
     </Stack>

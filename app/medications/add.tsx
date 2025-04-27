@@ -39,7 +39,7 @@ export default function AddMedicationScreen() {
   const [name, setName] = useState("");
   const [form, setForm] = useState<MedicationForm>("tablet");
   const [trackStock, setTrackStock] = useState(false);
-  const [dosage, setDosage] = useState("");
+  const [dosagePerUnit, setDosagePerUnit] = useState("");
   const [unit, setUnit] = useState(UnitsByForm[form][0][0]);
   const [instructions, setInstructions] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
@@ -88,7 +88,7 @@ export default function AddMedicationScreen() {
     addMedication({
       name,
       form,
-      dosage,
+      dosagePerUnit,
       unit,
       instructions,
       totalQuantity: Number(totalQuantity),
@@ -153,12 +153,12 @@ export default function AddMedicationScreen() {
     ...(form === "tablet" || form === "capsule"
       ? [
           {
-            key: "dosage",
+            key: "dosagePerUnit",
             label: `${translations.valuePerUnitAdd} ${unit.slice(0, -1)}е?`,
             render: () => (
               <Input
-                value={dosage}
-                onChangeText={(text) => setDosage(text.replaceAll(",", "."))}
+                value={dosagePerUnit}
+                onChangeText={(text) => setDosagePerUnit(text.replaceAll(",", "."))}
                 placeholder="20 мг    * опционально"
                 error={errors.dosage}
               />
@@ -268,12 +268,14 @@ export default function AddMedicationScreen() {
       />
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
+        keyboardOpeningTime={Number.MAX_SAFE_INTEGER} // ios bounce temp-fix
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={40}
         enableOnAndroid
         enableResetScrollToCoords={false}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={32} // вызывает onScroll каждые 32 мс
+        removeClippedSubviews={true} // android scroll lags fix
         onScroll={(e) => {
           scrollY.setValue(e.nativeEvent.contentOffset.y);
         }}

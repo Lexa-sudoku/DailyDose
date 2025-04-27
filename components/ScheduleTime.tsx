@@ -13,13 +13,10 @@ import { Input } from "./Input";
 import { translations } from "@/constants/translations";
 import { Picker } from "@react-native-picker/picker";
 import { UnitsByForm, MedicationForm, pluralize } from "@/constants/medication";
+import { ScheduleTimeItem } from "@/types";
 
 interface ScheduleTimesProps {
-  times: {
-    time: string;
-    dosage: string;
-    unit: string;
-  }[];
+  times: ScheduleTimeItem[];
   medicationForm: MedicationForm;
   onTimeChange: (index: number, newTime: string) => void;
   onDosageChange: (index: number, dosage: string) => void;

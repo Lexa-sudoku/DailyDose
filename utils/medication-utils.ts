@@ -46,7 +46,7 @@ export const convertUnit = (
     1 / (conversionTable[defaultUnit]?.[fromUnit] ?? NaN);
 
   if (isNaN(multiplier)) {
-    console.warn(`Нет конверсии из ${fromUnit} в ${defaultUnit}`);
+    console.warn(`${fromUnit} cannot be converted to ${defaultUnit}`);
     return 0;
   }
 

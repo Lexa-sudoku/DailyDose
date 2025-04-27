@@ -119,7 +119,6 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
         </View>
       </TouchableOpacity>
 
-      {/* Модальное окно с информацией о лекарстве */}
       <Modal
         animationType="fade"
         transparent={true}

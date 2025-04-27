@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { colors } from "@/constants/colors";
 import { MedicationIcon } from "./MedicationIcon";
 import { translations } from "@/constants/translations";

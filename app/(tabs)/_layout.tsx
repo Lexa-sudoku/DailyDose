@@ -14,7 +14,7 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 80 : 60,
+          height: Platform.OS === "ios" ? 80 : 60,
           paddingTop: 10,
         },
         headerStyle: {
@@ -31,21 +31,27 @@ export default function TabLayout() {
         name="calendar"
         options={{
           title: translations.medicationCalendar,
-          tabBarIcon: ({ color }: { color: string }) => <Calendar size={24} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Calendar size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="medications"
         options={{
           title: translations.myMedications,
-          tabBarIcon: ({ color }: { color: string }) => <Pill size={24} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Pill size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: translations.profile,
-          tabBarIcon: ({ color }: { color: string }) => <User size={24} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <User size={24} color={color} />
+          ),
         }}
       />
     </Tabs>

@@ -77,7 +77,6 @@ export default function EditProfileScreen() {
       router.back();
     } catch (error) {
       console.error("Update profile error:", error);
-      // Обработка ошибки
     }
   };
 

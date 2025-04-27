@@ -20,13 +20,18 @@ export default function NotificationsScreen() {
   const [isRegistering, setIsRegistering] = useState(false);
 
   const toggleMedicationReminders = () => {
+    const newValue = !notificationSettings.medicationRemindersEnabled;
     updateNotificationSettings({
-      medicationRemindersEnabled:
-        !notificationSettings.medicationRemindersEnabled,
+      medicationRemindersEnabled: newValue,
     });
-    if (!notificationSettings.medicationRemindersEnabled) {
+
+    if (!newValue) {
       cancelAllNotifications();
       clearAllNotifications();
+    } else {
+      rescheduleAllCourseNotifications(
+        notificationSettings.minutesBeforeSheduledTime
+      );
     }
   };
 
@@ -49,7 +54,7 @@ export default function NotificationsScreen() {
       const token = await registerForPushNotificationsAsync();
       if (token) {
         // В реальном приложении здесь был бы код для отправки токена на сервер
-        console.log("Expo push token:", token);
+        console.warn("Expo push token:", token);
       }
     } catch (error) {
       console.error("Error registering for push notifications:", error);

@@ -11,7 +11,7 @@ export interface Medication {
   id: string;
   name: string;
   form: MedicationForm;
-  dosage?: string;
+  dosagePerUnit?: string;
   unit: string;
   instructions: string;
   totalQuantity: number;
@@ -70,7 +70,7 @@ export interface MedicationIntake {
   createdAt: number;
   medicationName: string;
   mealRelation: MealRelation;
-  dosage?: string;
+  dosagePerUnit?: string;
   instructions: string;
   dosageByTime: string;
   unit: string;
@@ -83,9 +83,9 @@ export interface DailyMedicationGroup {
   scheduleId: string;
   medicationId: string;
   name: string;
-  dosage?: string;
+  dosagePerUnit?: string;
   instructions: string;
-  times: { time: string; dosage: string; unit: string }[];
+  times: ScheduleTimeItem[];
   mealRelation: MealRelation;
   takenAt?: number;
   iconName: string;
@@ -97,7 +97,7 @@ export interface DailyMedicationWithStatus {
   scheduleId: string;
   medicationId: string;
   name: string;
-  dosage: string;
+  dosagePerUnit?: string;
   dosageByTime: string;
   unit: string;
   instructions: string;

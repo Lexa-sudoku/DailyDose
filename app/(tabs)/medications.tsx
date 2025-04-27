@@ -21,7 +21,7 @@ export default function MedicationsScreen() {
   const [isModalVisible, setModalVisible] = useState(false);
 
   const openModal = (medication: Medication) => {
-    setSelectedMedication(medication)
+    setSelectedMedication(medication);
     setModalVisible(true);
   };
 

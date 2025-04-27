@@ -4,7 +4,11 @@ import { AlertTriangle, Edit, Plus } from "lucide-react-native";
 import { colors } from "@/constants/colors";
 import { Medication } from "@/types";
 import { MedicationIcon } from "./MedicationIcon";
-import { MedicationForms, pluralize, UnitsByForm } from "@/constants/medication";
+import {
+  MedicationForms,
+  pluralize,
+  UnitsByForm,
+} from "@/constants/medication";
 import { translations } from "@/constants/translations";
 
 interface MedicationInventoryCardProps {
@@ -18,7 +22,7 @@ export const MedicationInventoryCard: React.FC<
 > = ({ medication, onEdit, onRefill }) => {
   const {
     name,
-    dosage,
+    dosagePerUnit,
     form,
     remainingQuantity,
     totalQuantity,
@@ -45,7 +49,7 @@ export const MedicationInventoryCard: React.FC<
           <Text style={styles.medicationName}>{name}</Text>
           <Text style={styles.form}>
             {MedicationForms[form]}
-            {dosage ? `, ${dosage}` : ""}
+            {dosagePerUnit ? `, ${dosagePerUnit}` : ""}
           </Text>
         </View>
         <TouchableOpacity style={styles.editButton} onPress={onEdit}>
@@ -54,7 +58,10 @@ export const MedicationInventoryCard: React.FC<
         {trackStock && (
           <TouchableOpacity style={styles.editButton} onPress={onRefill}>
             <Plus size={18} color={colors.primary} />
-            <Text style={styles.addButtonText}> {translations.addQuantity}</Text>
+            <Text style={styles.addButtonText}>
+              {" "}
+              {translations.addQuantity}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -75,7 +82,8 @@ export const MedicationInventoryCard: React.FC<
           <View style={styles.inventoryInfo}>
             <Text style={styles.inventoryText}>
               {translations.remainingQuantity} {remainingQuantity}{" "}
-              {translations.outOf} {totalQuantity} {pluralize(UnitsByForm[form][0], totalQuantity)}
+              {translations.outOf} {totalQuantity}{" "}
+              {pluralize(UnitsByForm[form][0], totalQuantity)}
             </Text>
 
             {isLowStock && (

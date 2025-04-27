@@ -26,6 +26,7 @@ import { convertUnit } from "@/utils/medication-utils";
 import { translations } from "@/constants/translations";
 import { scheduleLowStockReminder } from "@/utils/notification-utils";
 import { useSettingsStore } from "./settings-store";
+import { getUnitDisplayFromRaw } from "@/constants/medication";
 
 interface MedicationState {
   medications: Medication[];
@@ -226,7 +227,7 @@ export const useMedicationStore = create<MedicationState>()(
           createdAt: timestamp,
           medicationName: medication.name,
           mealRelation: schedule.mealRelation,
-          dosage: medication.dosage,
+          dosagePerUnit: medication.dosagePerUnit,
           dosageByTime,
           unit,
           instructions: medication.instructions,
@@ -236,37 +237,39 @@ export const useMedicationStore = create<MedicationState>()(
 
         // Обновляем количество лекарства, если принято
         if (status === "taken") {
-          const medication = get().medications.find(
-            (m) => m.id === medicationId
-          );
           const { notificationSettings } = useSettingsStore.getState();
           if (medication && medication.remainingQuantity > 0) {
             const dosageByTimeFloat = parseFloat(dosageByTime);
 
-            const usedAmount = medication.dosage
+            const usedAmount = medication.dosagePerUnit
               ? convertUnit(
                   medication.form,
                   dosageByTimeFloat,
                   unit,
-                  medication.dosage
+                  medication.dosagePerUnit
                 )
               : convertUnit(medication.form, dosageByTimeFloat, unit);
 
-            get().updateMedication(medicationId, {
-              remainingQuantity:
-                medication.remainingQuantity -
-                Math.round(usedAmount * 1000) / 1000,
-            });
+            const resultQuantity = Math.max(
+              0,
+              medication.remainingQuantity -
+                Math.round(usedAmount * 1000) / 1000
+            );
 
             if (
               notificationSettings.lowStockRemindersEnabled &&
-              medication.remainingQuantity <= medication.lowStockThreshold
+              resultQuantity <= medication.lowStockThreshold
             ) {
               scheduleLowStockReminder(
                 medication.name,
-                medication.remainingQuantity
+                resultQuantity,
+                getUnitDisplayFromRaw(medication.unit, resultQuantity)
               );
             }
+
+            get().updateMedication(medicationId, {
+              remainingQuantity: resultQuantity,
+            });
           }
         }
 
@@ -417,7 +420,7 @@ export const useMedicationStore = create<MedicationState>()(
               scheduleId: schedule.id,
               medicationId: medication.id,
               name: medication.name,
-              dosage: medication.dosage,
+              dosagePerUnit: medication.dosagePerUnit,
               instructions: medication.instructions,
               times: [{ time, dosage, unit }],
               mealRelation: schedule.mealRelation,
@@ -440,7 +443,7 @@ export const useMedicationStore = create<MedicationState>()(
               scheduleId: intake.scheduleId,
               medicationId: intake.medicationId,
               name: intake.medicationName,
-              dosage: intake.dosage,
+              dosagePerUnit: intake.dosagePerUnit,
               instructions: intake.instructions,
               times: [
                 {
@@ -480,7 +483,7 @@ export const useMedicationStore = create<MedicationState>()(
               scheduleId: group.scheduleId,
               medicationId: group.medicationId,
               name: group.name,
-              dosage,
+              dosagePerUnit: group.dosagePerUnit,
               dosageByTime: intake?.dosageByTime || dosage,
               unit: intake?.unit || unit,
               instructions: group.instructions,

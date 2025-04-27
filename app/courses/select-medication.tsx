@@ -23,7 +23,7 @@ export default function SelectMedicationScreen() {
   const { medications } = useMedicationStore();
 
   const filteredMedications = medications.filter((med) =>
-    med.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    med.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSelectMedication = (medicationId: string) => {
@@ -48,7 +48,10 @@ export default function SelectMedicationScreen() {
       </View>
       <View style={styles.medicationInfo}>
         <Text style={styles.medicationName}>{item.name}</Text>
-        <Text style={styles.medicationDosage}>{MedicationForms[item.form]}{item.dosage ? `, ${item.dosage}` : ""}</Text>
+        <Text style={styles.medicationDosage}>
+          {MedicationForms[item.form]}
+          {item.dosagePerUnit ? `, ${item.dosagePerUnit}` : ""}
+        </Text>
       </View>
     </TouchableOpacity>
   );

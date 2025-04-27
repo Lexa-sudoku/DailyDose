@@ -21,13 +21,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const daysInMonth = new Date(
     currentMonth.getFullYear(),
     currentMonth.getMonth() + 1,
-    0,
+    0
   ).getDate();
 
   const firstDayOfMonth = new Date(
     currentMonth.getFullYear(),
     currentMonth.getMonth(),
-    1,
+    1
   ).getDay();
 
   const numLastDayOfMonth = new Date(lastDayOfMonth(selectedDate)).getDay();
@@ -38,13 +38,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
   const prevMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
     );
   };
 
   const nextMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
     );
   };
 
@@ -52,7 +52,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const newDate = new Date(
       currentMonth.getFullYear(),
       currentMonth.getMonth(),
-      day,
+      day
     );
     setSelectedDate(newDate);
   };
@@ -94,7 +94,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       days.push(
         <Text key={`header-${i}`} style={styles.dayName}>
           {dayNames[i]}
-        </Text>,
+        </Text>
       );
     }
 
@@ -123,7 +123,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           >
             {i}
           </Text>
-        </TouchableOpacity>,
+        </TouchableOpacity>
       );
     }
 

@@ -83,8 +83,9 @@ export default function EditScheduleScreen() {
 
   const handleSave = async () => {
     if (!validateForm()) return;
-    if (draft) {
-      const newSchedule = { ...schedule, id: scheduleId.split("-")[1] };
+    const newId = scheduleId.split("-")[1];
+    if (draft && !existing) {
+      const newSchedule = { ...schedule, id: newId };
       addSchedule(newSchedule);
       deleteDraftSchedule(scheduleId);
 
@@ -94,11 +95,12 @@ export default function EditScheduleScreen() {
           medication?.name || translations.medication,
           minutesBefore
         );
-        setNotifications(schedule.id, identifiers);
-      }
+
+        setNotifications(newId, identifiers);
+      } else setNotifications(newId, []);
     } else {
       updateSchedule(scheduleId, schedule);
-      
+
       if (notificationSettings.medicationRemindersEnabled) {
         const oldIdentifiers = getNotifications(scheduleId);
         const newIdentifiers = await rescheduleCourseNotifications(
@@ -108,8 +110,8 @@ export default function EditScheduleScreen() {
           minutesBefore
         );
 
-        setNotifications(schedule.id, newIdentifiers);
-      }
+        setNotifications(scheduleId, newIdentifiers);
+      } else setNotifications(scheduleId, []);
     }
     router.replace("/(tabs)/calendar");
   };
@@ -273,7 +275,7 @@ export default function EditScheduleScreen() {
             <Text style={styles.medicationName}>{medication.name}</Text>
             <Text style={styles.medicationDosage}>
               {MedicationForms[medication.form]}
-              {medication.dosage ? `, ${medication.dosage}` : ""}
+              {medication.dosagePerUnit ? `, ${medication.dosagePerUnit}` : ""}
             </Text>
           </View>
         </View>
@@ -288,6 +290,7 @@ export default function EditScheduleScreen() {
           enableResetScrollToCoords={false}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={32} // вызывает onScroll каждые 32 мс
+          removeClippedSubviews={true} // android scroll lags fix
           onScroll={(e) => {
             scrollY.setValue(e.nativeEvent.contentOffset.y);
           }}

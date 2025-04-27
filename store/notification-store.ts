@@ -36,7 +36,17 @@ export const useNotificationStore = create<NotificationStore>()(
       },
 
       clearAllNotifications: () => {
-        set({ notifications: {} });
+        set((state) => {
+          const updatedNotifications = Object.keys(state.notifications).reduce(
+            (acc, scheduleId) => {
+              acc[scheduleId] = [];
+              return acc;
+            },
+            {} as CourseNotificationMap
+          );
+
+          return { notifications: updatedNotifications };
+        });
       },
     }),
     {
