@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { Stack, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,10 +12,15 @@ import { formatDate, formatTime } from "@/utils/date-utils";
 import { translations } from "@/constants/translations";
 import { Button } from "@/components/Button";
 import { addDays, format } from "date-fns";
+import { cleanupExpiredCourseNotifications } from "@/utils/notification-utils";
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const formattedDate = formatDate(selectedDate);
+
+  useEffect(() => {
+    cleanupExpiredCourseNotifications();
+  }, []);
 
   const {
     getMedicationsByDateSlplittedByTime,

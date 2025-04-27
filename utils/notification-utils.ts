@@ -1,6 +1,11 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { formatDateTime } from "./date-utils";
+import { addDays, isBefore, parseISO, set } from "date-fns";
+import { MedicationSchedule } from "@/types";
+import { useNotificationStore } from "@/store/notification-store";
+import { useMedicationStore } from "@/store/medication-store";
+import { getCourseActiveDates } from "./course-utils";
+import { translations } from "@/constants/translations";
 
 export async function registerForPushNotificationsAsync() {
   let token;
@@ -32,45 +37,66 @@ export async function registerForPushNotificationsAsync() {
   return token;
 }
 
-export async function scheduleMedicationReminder(
+export async function scheduleCourseNotifications(
+  schedule: MedicationSchedule,
   medicationName: string,
-  dosage: string,
-  date: string,
-  time: string,
-  minutesBefore: number,
-) {
-  // Создаем дату и время напоминания
-  const scheduledDateTime = formatDateTime(date, time);
-  const reminderTime = new Date(
-    scheduledDateTime.getTime() - minutesBefore * 60 * 1000,
+  minutesBefore: number
+): Promise<string[]> {
+  const { frequency, startDate, endDate, durationDays, times, days, dates } =
+    schedule;
+
+  const notificationDates = getCourseActiveDates(
+    frequency,
+    startDate,
+    endDate,
+    durationDays,
+    days,
+    dates
   );
+  const identifiers: string[] = [];
 
-  // Если время напоминания уже прошло, не планируем уведомление
-  if (reminderTime < new Date()) {
-    return null;
+  for (const date of notificationDates) {
+    for (const { time, dosage, unit } of times) {
+      const [hour, minute] = time.split(":").map(Number);
+
+      const scheduledDateTime = set(date, {
+        hours: hour,
+        minutes: minute,
+        seconds: 0,
+        milliseconds: 0,
+      });
+
+      const reminderTime = new Date(
+        scheduledDateTime.getTime() - minutesBefore * 60 * 1000
+      );
+
+      if (reminderTime < new Date()) {
+        continue;
+      }
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `Пора принять ${medicationName}`,
+          body: `Примите ${dosage} ${unit} в ${time}`,
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: { medicationName, dosage, unit, date, time },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: reminderTime,
+        },
+      });
+
+      identifiers.push(identifier);
+    }
   }
-
-  // Планируем уведомление
-  const identifier = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Напоминание о приеме лекарства",
-      body: `Пора принять ${medicationName} (${dosage})`,
-      sound: true,
-      priority: Notifications.AndroidNotificationPriority.HIGH,
-      data: { medicationName, dosage, date, time },
-    },
-    trigger: {
-    type: Notifications.SchedulableTriggerInputTypes.DATE,
-    date: reminderTime,
-  },
-  });
-
-  return identifier;
+  return identifiers;
 }
 
 export async function scheduleLowStockReminder(
   medicationName: string,
-  remainingQuantity: number,
+  remainingQuantity: number
 ) {
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
@@ -86,8 +112,89 @@ export async function scheduleLowStockReminder(
   return identifier;
 }
 
-export async function cancelNotification(identifier: string) {
-  await Notifications.cancelScheduledNotificationAsync(identifier);
+export async function cancelNotifications(identifiers: string[]) {
+  for (const id of identifiers) {
+    try {
+      await Notifications.cancelScheduledNotificationAsync(id);
+    } catch (error) {
+      console.warn(`Failed to cancel notification ${id}:`, error);
+    }
+  }
+}
+
+export async function rescheduleCourseNotifications(
+  oldIdentifiers: string[],
+  schedule: MedicationSchedule,
+  medicationName: string,
+  minutesBefore: number
+): Promise<string[]> {
+  await cancelNotifications(oldIdentifiers);
+
+  const newIdentifiers = await scheduleCourseNotifications(
+    schedule,
+    medicationName,
+    minutesBefore
+  );
+
+  return newIdentifiers;
+}
+
+export async function rescheduleAllCourseNotifications(
+  newMinutesBefore: number
+) {
+  const { notifications, setNotifications, clearNotifications } =
+    useNotificationStore.getState();
+  const { getScheduleById, getMedicationById } = useMedicationStore.getState();
+
+  for (const scheduleId of Object.keys(notifications)) {
+    const schedule = getScheduleById(scheduleId);
+
+    if (!schedule) {
+      clearNotifications(scheduleId); // удаляем уведомления из стора, если курс не найден/удален
+      continue;
+    }
+
+    const medication = getMedicationById(schedule.medicationId);
+
+    const oldIdentifiers = notifications[scheduleId];
+    const newIdentifiers = await rescheduleCourseNotifications(
+      oldIdentifiers,
+      schedule,
+      medication?.name || translations.medication,
+      newMinutesBefore
+    );
+
+    setNotifications(scheduleId, newIdentifiers);
+  }
+}
+
+export async function cleanupExpiredCourseNotifications() {
+  const { notifications, clearNotifications } = useNotificationStore.getState();
+  const { getScheduleById } = useMedicationStore.getState();
+  const now = new Date();
+
+  for (const scheduleId of Object.keys(notifications)) {
+    const course = getScheduleById(scheduleId);
+
+    if (!course) {
+      clearNotifications(scheduleId); // удаляем уведомления из стора, если курс не найден/удален
+      continue;
+    }
+
+    const endDate = course.endDate
+      ? addDays(parseISO(course.endDate), 1)
+      : course.durationDays
+        ? addDays(parseISO(course.startDate), course.durationDays + 1)
+        : null;
+
+    if (!endDate) continue;
+
+    const isExpired = isBefore(endDate, now);
+
+    if (isExpired) {
+      clearNotifications(scheduleId);
+    }
+  }
 }
 
 export async function cancelAllNotifications() {

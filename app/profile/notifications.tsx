@@ -6,11 +6,17 @@ import { colors } from "@/constants/colors";
 import { translations } from "@/constants/translations";
 import { useSettingsStore } from "@/store/settings-store";
 import { Button } from "@/components/Button";
-import { registerForPushNotificationsAsync } from "@/utils/notification-utils";
+import {
+  cancelAllNotifications,
+  registerForPushNotificationsAsync,
+  rescheduleAllCourseNotifications,
+} from "@/utils/notification-utils";
+import { useNotificationStore } from "@/store/notification-store";
 
 export default function NotificationsScreen() {
   const { notificationSettings, updateNotificationSettings } =
     useSettingsStore();
+  const { clearAllNotifications } = useNotificationStore();
   const [isRegistering, setIsRegistering] = useState(false);
 
   const toggleMedicationReminders = () => {
@@ -18,6 +24,10 @@ export default function NotificationsScreen() {
       medicationRemindersEnabled:
         !notificationSettings.medicationRemindersEnabled,
     });
+    if (!notificationSettings.medicationRemindersEnabled) {
+      cancelAllNotifications();
+      clearAllNotifications();
+    }
   };
 
   const toggleLowStockReminders = () => {
@@ -28,8 +38,9 @@ export default function NotificationsScreen() {
 
   const updateReminderTime = (minutes: number) => {
     updateNotificationSettings({
-      reminderTime: minutes,
+      minutesBeforeSheduledTime: minutes,
     });
+    rescheduleAllCourseNotifications(minutes);
   };
 
   const requestNotificationPermissions = async () => {
@@ -88,7 +99,8 @@ export default function NotificationsScreen() {
                 {translations.reminderTime}
               </Text>
               <Text style={styles.settingDescription}>
-                {notificationSettings.reminderTime} {translations.minutesBefore}
+                {notificationSettings.minutesBeforeSheduledTime}{" "}
+                {translations.minutesBefore}
               </Text>
             </View>
             <View style={styles.timeButtons}>
@@ -96,7 +108,7 @@ export default function NotificationsScreen() {
                 title="5"
                 onPress={() => updateReminderTime(5)}
                 variant={
-                  notificationSettings.reminderTime === 5
+                  notificationSettings.minutesBeforeSheduledTime === 5
                     ? "primary"
                     : "outline"
                 }
@@ -107,7 +119,7 @@ export default function NotificationsScreen() {
                 title="15"
                 onPress={() => updateReminderTime(15)}
                 variant={
-                  notificationSettings.reminderTime === 15
+                  notificationSettings.minutesBeforeSheduledTime === 15
                     ? "primary"
                     : "outline"
                 }
@@ -118,7 +130,7 @@ export default function NotificationsScreen() {
                 title="30"
                 onPress={() => updateReminderTime(30)}
                 variant={
-                  notificationSettings.reminderTime === 30
+                  notificationSettings.minutesBeforeSheduledTime === 30
                     ? "primary"
                     : "outline"
                 }

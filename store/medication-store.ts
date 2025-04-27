@@ -24,6 +24,8 @@ import {
 } from "date-fns";
 import { convertUnit } from "@/utils/medication-utils";
 import { translations } from "@/constants/translations";
+import { scheduleLowStockReminder } from "@/utils/notification-utils";
+import { useSettingsStore } from "./settings-store";
 
 interface MedicationState {
   medications: Medication[];
@@ -237,6 +239,7 @@ export const useMedicationStore = create<MedicationState>()(
           const medication = get().medications.find(
             (m) => m.id === medicationId
           );
+          const { notificationSettings } = useSettingsStore.getState();
           if (medication && medication.remainingQuantity > 0) {
             const dosageByTimeFloat = parseFloat(dosageByTime);
 
@@ -254,6 +257,16 @@ export const useMedicationStore = create<MedicationState>()(
                 medication.remainingQuantity -
                 Math.round(usedAmount * 1000) / 1000,
             });
+
+            if (
+              notificationSettings.lowStockRemindersEnabled &&
+              medication.remainingQuantity <= medication.lowStockThreshold
+            ) {
+              scheduleLowStockReminder(
+                medication.name,
+                medication.remainingQuantity
+              );
+            }
           }
         }
 
@@ -643,7 +656,7 @@ export const useMedicationStore = create<MedicationState>()(
     }),
     {
       name: "medication-storage",
-      version: 1, // Меняем версию, чтобы сбросить state
+      // version: 1, // Меняем версию, чтобы сбросить state
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

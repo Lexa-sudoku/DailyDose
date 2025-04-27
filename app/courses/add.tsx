@@ -16,14 +16,14 @@ import { MedicationSchedule } from "@/types";
 import { translations } from "@/constants/translations";
 import { format } from "date-fns/format";
 import { parseISO } from "date-fns";
+import { useNotificationStore } from "@/store/notification-store";
+import { cancelNotifications } from "@/utils/notification-utils";
 
 export default function AddCourseScreen() {
   const params = useLocalSearchParams<{
     medicationId?: string;
   }>();
   const { medicationId } = params;
-
-  console.log(medicationId, params.medicationId)
 
   const [selectedMedicationId] = useState<string | undefined>(medicationId);
   const [schedules, setSchedules] = useState<MedicationSchedule[]>([]);
@@ -39,6 +39,8 @@ export default function AddCourseScreen() {
     deleteSchedule,
     addDraftSchedule,
   } = useMedicationStore();
+
+  const { getNotifications, clearNotifications } = useNotificationStore();
 
   const selectedMedication = selectedMedicationId
     ? getMedicationById(selectedMedicationId)
@@ -138,12 +140,16 @@ export default function AddCourseScreen() {
         style: "destructive",
         onPress: () => {
           const scheduleToRemove = schedules[index];
+
+          const oldIdentifiers = getNotifications(scheduleToRemove.id);
+          cancelNotifications(oldIdentifiers);
+          clearNotifications(scheduleToRemove.id);
+
           deleteSchedule(scheduleToRemove.id, true);
 
           const newSchedules = [...schedules];
           newSchedules.splice(index, 1);
           setSchedules(newSchedules);
-          router.back();
         },
       },
     ]);

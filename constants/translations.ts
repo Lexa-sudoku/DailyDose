@@ -185,6 +185,7 @@ export const translations = {
   passwordTooShort: "Пароль должен содержать минимум 6 символов",
   passwordsDoNotMatch: "Пароли не совпадают",
   invalidQuantity: "Введите корректное количество",
+  duplicateTime: "Время не должно повторяться",
   invalidTime: "Введите корректное время",
   thresholdTooHigh: "Порог должен быть меньше общего количества",
   remainingTooHigh: "Не может превышать общее количество",

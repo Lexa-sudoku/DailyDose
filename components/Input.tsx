@@ -87,14 +87,12 @@ export const Input: React.FC<InputProps> = ({
               <View style={styles.leftIconContainer}>{leftIcon}</View>
             )}
 
-
-            {/* todo поправить ошибку, но не критично, не влияет */}
             <TextInput
               style={[
                 styles.input,
-                leftIcon && styles.inputWithLeftIcon,
-                (rightIcon || secureTextEntry) && styles.inputWithRightIcon,
-                multiline && styles.textMultiline,
+                leftIcon ? styles.inputWithLeftIcon : null,
+                (rightIcon || secureTextEntry) ? styles.inputWithRightIcon : null,
+                multiline ? styles.textMultiline : null,
                 inputStyle,
               ]}
               value={value}
@@ -107,7 +105,7 @@ export const Input: React.FC<InputProps> = ({
               editable={!disabled}
               multiline={multiline}
               numberOfLines={multiline ? numberOfLines : 1}
-              inputAccessoryViewID={accessoryViewID || null}
+              inputAccessoryViewID={accessoryViewID || undefined}
             />
             {secureTextEntry ? (
               <TouchableOpacity

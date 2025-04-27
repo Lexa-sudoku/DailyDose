@@ -122,7 +122,7 @@ export interface MedicationStats {
 
 export interface NotificationSettings {
   medicationRemindersEnabled: boolean;
-  reminderTime: number; // minutes before scheduled time
+  minutesBeforeSheduledTime: number;
   lowStockRemindersEnabled: boolean;
 }
 
@@ -141,3 +141,7 @@ export interface MedicationAdherenceData {
   medicationName: string;
   adherenceRate: number;
 }
+
+export type CourseNotificationMap = {
+  [scheduleId: string]: string[]; // { [ID курса]: массив идентификаторов уведомлений }
+};

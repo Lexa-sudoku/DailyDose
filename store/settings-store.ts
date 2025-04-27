@@ -10,7 +10,7 @@ interface SettingsState {
 
 const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   medicationRemindersEnabled: true,
-  reminderTime: 15, // 15 минут до запланированного времени
+  minutesBeforeSheduledTime: 15,
   lowStockRemindersEnabled: true,
 };
 
