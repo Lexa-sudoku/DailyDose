@@ -1,8 +1,29 @@
-name: Test Workflow
-on: [push]
+name: Unit Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
 jobs:
-  test:
+  unit-tests:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
+
     steps:
-      - name: Print Hello
-        run: echo "Workflow is running!"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Unit Tests
+        run: npm test
+        env:
+          CI: true  # Важно для корректной работы Jest в CI-окружении
