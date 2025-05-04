@@ -3,7 +3,6 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@utils/*": ["./utils/*"],
       "@/*": ["./*"],
     },
     "module": "ESNext",   // Используем модули ES6
@@ -11,5 +10,5 @@
     "esModuleInterop": true,   // Поддержка импорта из CommonJS
     "moduleResolution": "node"
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "__mocks__/**/*", "tests/**/*"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }
