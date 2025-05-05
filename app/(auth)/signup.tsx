@@ -69,7 +69,7 @@ export default function SignupScreen() {
     if (!validateForm()) return;
 
     try {
-      await signup(name, email, password);
+      await signup(Date.now().toString(), name, email, password);
       router.replace("/(tabs)/calendar");
     } catch (error) {
       console.error("Signup error:", error);

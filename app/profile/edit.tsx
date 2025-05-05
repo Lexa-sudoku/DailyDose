@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { User, Mail, Lock } from "lucide-react-native";
@@ -16,8 +12,7 @@ import { ProfilePhoto } from "@/components/ProfilePhoto";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function EditProfileScreen() {
-  const { user, updateProfile, updatePassword, updatePhoto, isLoading } =
-    useAuthStore();
+  const { user, updateProfile, updatePassword, isLoading } = useAuthStore();
 
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -80,9 +75,9 @@ export default function EditProfileScreen() {
     }
   };
 
-  const handlePhotoSelected = async (uri: string) => {
+  const handlePhotoSelected = async (photoUrl: string) => {
     try {
-      await updatePhoto(uri);
+      await updateProfile({ photoUrl });
     } catch (error) {
       console.error("Update photo error:", error);
     }

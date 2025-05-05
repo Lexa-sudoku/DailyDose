@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authApi } from "@/api/auth-api";
 import { User } from "@/types";
 
 interface AuthState {
@@ -8,13 +9,17 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  signup: (
+    id: string,
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   updatePassword: (
     currentPassword: string,
-    newPassword: string,
+    newPassword: string
   ) => Promise<void>;
-  updatePhoto: (photoUrl: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -28,37 +33,34 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          // В реальном приложении здесь был бы API-запрос
-          // Для демо имитируем успешный вход
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const { auth_token } = await authApi.login({ email, password });
 
-          const user: User = {
-            id: "1",
-            name: "Username",
-            email,
-          };
+          const user = await authApi.getCurrentUser(auth_token);
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
 
-          set({ user, isAuthenticated: true, isLoading: false });
+          await AsyncStorage.setItem("auth_token", auth_token);
         } catch (error) {
           set({ isLoading: false });
           throw error;
         }
       },
 
-      signup: async (name: string, email: string, password: string) => {
+      signup: async (
+        id: string,
+        name: string,
+        email: string,
+        password: string
+      ) => {
         set({ isLoading: true });
         try {
-          // В реальном приложении здесь был бы API-запрос
-          // Для демо имитируем успешную регистрацию
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const user = await authApi.register({ id, name, email, password });
+          set({ user, isLoading: false });
 
-          const user: User = {
-            id: Date.now().toString(),
-            name,
-            email,
-          };
-
-          set({ user, isAuthenticated: true, isLoading: false });
+          await get().login(email, password);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -68,17 +70,10 @@ export const useAuthStore = create<AuthState>()(
       updateProfile: async (data: Partial<User>) => {
         set({ isLoading: true });
         try {
-          // В реальном приложении здесь был бы API-запрос
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
 
-          const currentUser = get().user;
-          if (!currentUser) throw new Error("Пользователь не авторизован");
-
-          const updatedUser = {
-            ...currentUser,
-            ...data,
-          };
-
+          const updatedUser = await authApi.updateUser(data, token);
           set({ user: updatedUser, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
@@ -86,13 +81,16 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updatePassword: async (currentPassword: string, newPassword: string) => {
+      updatePassword: async (currentPass: string, newPass: string) => {
         set({ isLoading: true });
         try {
-          // В реальном приложении здесь был бы API-запрос
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
 
-          // Просто имитируем успешное обновление пароля
+          await authApi.changePassword(
+            { current_password: currentPass, new_password: newPass },
+            token
+          );
           set({ isLoading: false });
         } catch (error) {
           set({ isLoading: false });
@@ -100,31 +98,25 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updatePhoto: async (photoUrl: string) => {
-        set({ isLoading: true });
+      logout: async () => {
         try {
-          const currentUser = get().user;
-          if (!currentUser) throw new Error("Пользователь не авторизован");
-
-          const updatedUser = {
-            ...currentUser,
-            photoUrl,
-          };
-
-          set({ user: updatedUser, isLoading: false });
-        } catch (error) {
-          set({ isLoading: false });
-          throw error;
+          const token = await AsyncStorage.getItem("auth_token");
+          if (token) {
+            await authApi.logout(token);
+          }
+        } finally {
+          await AsyncStorage.removeItem("auth_token");
+          set({ user: null, isAuthenticated: false });
         }
-      },
-
-      logout: () => {
-        set({ user: null, isAuthenticated: false });
       },
     }),
     {
       name: "auth-storage",
       storage: createJSONStorage(() => AsyncStorage),
-    },
-  ),
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
 );

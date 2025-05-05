@@ -27,27 +27,38 @@ import { translations } from "@/constants/translations";
 import { scheduleLowStockReminder } from "@/utils/notification-utils";
 import { useSettingsStore } from "./settings-store";
 import { getUnitDisplayFromRaw } from "@/constants/medication";
+import { medicationApi } from "@/api/medication-api";
 
 interface MedicationState {
   medications: Medication[];
   schedules: MedicationSchedule[];
   intakes: MedicationIntake[];
-
   draftSchedules: Record<string, MedicationSchedule>;
+
+  // Загрузка данных
+  loadMedications: () => Promise<void>;
+  loadSchedules: () => Promise<void>;
+  loadIntakes: () => Promise<void>;
 
   // Medication CRUD
   addMedication: (
     medication: Omit<Medication, "id" | "createdAt" | "updatedAt">
-  ) => string;
-  updateMedication: (id: string, medication: Partial<Medication>) => void;
-  deleteMedication: (id: string, keepHistory?: boolean) => void;
+  ) => Promise<string>;
+  updateMedication: (
+    id: string,
+    medication: Partial<Medication>
+  ) => Promise<void>;
+  deleteMedication: (id: string, keepHistory?: boolean) => Promise<void>;
 
   // Schedule CRUD
   addSchedule: (
     schedule: Omit<MedicationSchedule, "id" | "createdAt" | "updatedAt">
-  ) => string;
-  updateSchedule: (id: string, schedule: Partial<MedicationSchedule>) => void;
-  deleteSchedule: (id: string, keepHistory?: boolean) => void;
+  ) => Promise<string>;
+  updateSchedule: (
+    id: string,
+    schedule: Partial<MedicationSchedule>
+  ) => Promise<void>;
+  deleteSchedule: (id: string, keepHistory?: boolean) => Promise<void>;
 
   // Intake management
   recordIntake: (
@@ -58,7 +69,7 @@ interface MedicationState {
     status: "taken" | "missed",
     dosage: string,
     unit: string
-  ) => void;
+  ) => Promise<void>;
 
   // Drafts CRUD
   addDraftSchedule: (draftSchedule: MedicationSchedule) => string;
@@ -98,107 +109,245 @@ export const useMedicationStore = create<MedicationState>()(
       intakes: [],
       draftSchedules: {},
 
-      addMedication: (medicationData) => {
-        const id = Date.now().toString();
-        const timestamp = Date.now();
+      loadMedications: async () => {
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
 
-        const newMedication: Medication = {
-          id,
-          ...medicationData,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
-
-        set((state) => ({
-          medications: [...state.medications, newMedication],
-        }));
-
-        return id;
+          const medications = await medicationApi.getMedications(token);
+          set({ medications });
+        } catch (error) {
+          console.error("Failed to load medications", error);
+        }
       },
 
-      updateMedication: (id, medicationData) => {
-        set((state) => ({
-          medications: state.medications.map((med) =>
-            med.id === id
-              ? { ...med, ...medicationData, updatedAt: Date.now() }
-              : med
-          ),
-        }));
+      loadSchedules: async () => {
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
+
+          const schedules = await medicationApi.getSchedules(token);
+          set({ schedules });
+        } catch (error) {
+          console.error("Failed to load schedules", error);
+        }
       },
 
-      deleteMedication: (id, keepHistory = false) => {
-        set((state) => {
+      loadIntakes: async () => {
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
+
+          const intakes = await medicationApi.getIntakes(token);
+          set({ intakes });
+        } catch (error) {
+          console.error("Failed to load intakes", error);
+        }
+      },
+
+      addMedication: async (medicationData) => {
+        try {
+          const id = Date.now().toString();
+          const timestamp = Date.now();
+
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
+
+          const newMedication: Medication = {
+            id,
+            ...medicationData,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+
+          await medicationApi.createMedication(newMedication, token);
+
+          set((state) => ({
+            medications: [...state.medications, newMedication],
+          }));
+
+          return id;
+        } catch (error) {
+          console.error("Failed to add medication", error);
+          throw error;
+        }
+      },
+
+      updateMedication: async (id, medicationData) => {
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
+
+          const updatedMedication = await medicationApi.updateMedication(
+            id,
+            { ...medicationData, updatedAt: Date.now() },
+            token
+          );
+          set((state) => ({
+            medications: state.medications.map((med) =>
+              med.id === id ? updatedMedication : med
+            ),
+          }));
+        } catch (error) {
+          console.error("Failed to update medication", error);
+          throw error;
+        }
+      },
+
+      deleteMedication: async (id, keepHistory = false) => {
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
+
+          // Получаем все связанные расписания перед удалением
+          const schedulesToDelete = get().schedules.filter(
+            (schedule) => schedule.medicationId === id
+          );
+
+          // Массовое удаление расписаний с сервера
+          await Promise.all(
+            schedulesToDelete.map((schedule) =>
+              medicationApi
+                .deleteSchedule(schedule.id, token)
+                .catch(console.error)
+            )
+          );
+
+          await medicationApi.deleteMedication(id, token);
           // Если нужно сохранить историю, удаляем только лекарство, но не приемы
           if (keepHistory) {
-            return {
+            set((state) => ({
               medications: state.medications.filter((med) => med.id !== id),
               schedules: state.schedules.filter(
                 (schedule) => schedule.medicationId !== id
               ),
-            };
+            }));
+          } else {
+            // Иначе удаляем все связанные данные
+            const intakesToDelete = get().intakes.filter(
+              (intake) => intake.medicationId === id
+            );
+
+            // Массовое удаление приемов с сервера
+            await Promise.all(
+              intakesToDelete.map((intake) =>
+                medicationApi
+                  .deleteIntake(intake.id, token)
+                  .catch(console.error)
+              )
+            );
+
+            set((state) => ({
+              medications: state.medications.filter((med) => med.id !== id),
+              schedules: state.schedules.filter(
+                (schedule) => schedule.medicationId !== id
+              ),
+              intakes: state.intakes.filter(
+                (intake) => intake.medicationId !== id
+              ),
+            }));
           }
+        } catch (error) {
+          console.error("Failed to delete medication", error);
+          throw error;
+        }
+      },
 
-          // Иначе удаляем все связанные данные
-          return {
-            medications: state.medications.filter((med) => med.id !== id),
-            schedules: state.schedules.filter(
-              (schedule) => schedule.medicationId !== id
-            ),
-            intakes: state.intakes.filter(
-              (intake) => intake.medicationId !== id
-            ),
+      addSchedule: async (scheduleData) => {
+        try {
+          const id = Date.now().toString();
+          const timestamp = Date.now();
+
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
+
+          const newSchedule: MedicationSchedule = {
+            id,
+            ...scheduleData,
+            createdAt: timestamp,
+            updatedAt: timestamp,
           };
-        });
+
+          await medicationApi.createSchedule(newSchedule, token);
+
+          set((state) => ({
+            schedules: [...state.schedules, newSchedule],
+          }));
+
+          return id;
+        } catch (error) {
+          console.error("Failed to add schedule", error);
+          throw error;
+        }
       },
 
-      addSchedule: (scheduleData) => {
-        const id = Date.now().toString();
-        const timestamp = Date.now();
+      updateSchedule: async (id, scheduleData) => {
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
 
-        const newSchedule: MedicationSchedule = {
-          id,
-          ...scheduleData,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
+          const updatedSchedule = await medicationApi.updateSchedule(
+            id,
+            { ...scheduleData, updatedAt: Date.now() },
+            token
+          );
 
-        set((state) => ({
-          schedules: [...state.schedules, newSchedule],
-        }));
-
-        return id;
+          set((state) => ({
+            schedules: state.schedules.map((schedule) =>
+              schedule.id === id ? updatedSchedule : schedule
+            ),
+          }));
+        } catch (error) {
+          console.error("Failed to update schedule", error);
+          throw error;
+        }
       },
 
-      updateSchedule: (id, scheduleData) => {
-        set((state) => ({
-          schedules: state.schedules.map((schedule) =>
-            schedule.id === id
-              ? { ...schedule, ...scheduleData, updatedAt: Date.now() }
-              : schedule
-          ),
-        }));
-      },
+      deleteSchedule: async (id, keepHistory = false) => {
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
 
-      deleteSchedule: (id, keepHistory = false) => {
-        set((state) => {
+          await medicationApi.deleteSchedule(id, token);
+
           // Если нужно сохранить историю, удаляем только расписание, но не приемы
           if (keepHistory) {
-            return {
+            set((state) => ({
               schedules: state.schedules.filter(
                 (schedule) => schedule.id !== id
               ),
-            };
-          }
+            }));
+          } else {
+            // Иначе удаляем все связанные приемы
+            const intakesToDelete = get().intakes.filter(
+              (intake) => intake.scheduleId === id
+            );
 
-          // Иначе удаляем все связанные данные
-          return {
-            schedules: state.schedules.filter((schedule) => schedule.id !== id),
-            intakes: state.intakes.filter((intake) => intake.scheduleId !== id),
-          };
-        });
+            // Массовое удаление приемов с сервера
+            await Promise.all(
+              intakesToDelete.map((intake) =>
+                medicationApi
+                  .deleteIntake(intake.id, token)
+                  .catch(console.error)
+              )
+            );
+
+            set((state) => ({
+              schedules: state.schedules.filter(
+                (schedule) => schedule.id !== id
+              ),
+              intakes: state.intakes.filter(
+                (intake) => intake.scheduleId !== id
+              ),
+            }));
+          }
+        } catch (error) {
+          console.error("Failed to delete schedule", error);
+          throw error;
+        }
       },
 
-      recordIntake: (
+      recordIntake: async (
         scheduleId,
         medicationId,
         date,
@@ -207,95 +356,104 @@ export const useMedicationStore = create<MedicationState>()(
         dosageByTime,
         unit
       ) => {
-        const medication = get().medications.find(
-          (med) => med.id === medicationId
-        );
-        const schedule = get().schedules.find((s) => s.id === scheduleId);
-        if (!schedule || !medication) return;
+        try {
+          const token = await AsyncStorage.getItem("auth_token");
+          if (!token) throw new Error("Not authenticated");
 
-        const intakeId = Date.now().toString();
-        const timestamp = Date.now();
+          const medication = get().getMedicationById(medicationId);
+          const schedule = get().getScheduleById(scheduleId);
+          if (!schedule || !medication) return;
 
-        const newIntake: MedicationIntake = {
-          id: intakeId,
-          scheduleId,
-          medicationId,
-          scheduledTime: time,
-          scheduledDate: date,
-          status,
-          takenAt: status === "taken" ? timestamp : undefined,
-          createdAt: timestamp,
-          medicationName: medication.name,
-          mealRelation: schedule.mealRelation,
-          dosagePerUnit: medication.dosagePerUnit,
-          dosageByTime,
-          unit,
-          instructions: medication.instructions,
-          iconColor: medication.iconColor,
-          iconName: medication.iconName,
-        };
+          const intakeId = Date.now().toString();
+          const timestamp = Date.now();
 
-        // Обновляем количество лекарства, если принято
-        if (status === "taken") {
-          const { notificationSettings } = useSettingsStore.getState();
-          if (medication && medication.remainingQuantity > 0) {
-            const dosageByTimeFloat = parseFloat(dosageByTime);
+          const newIntake: MedicationIntake = {
+            id: intakeId,
+            scheduleId,
+            medicationId,
+            scheduledTime: time,
+            scheduledDate: date,
+            status,
+            takenAt: status === "taken" ? timestamp : undefined,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            medicationName: medication.name,
+            mealRelation: schedule.mealRelation,
+            dosagePerUnit: medication.dosagePerUnit,
+            dosageByTime,
+            unit,
+            instructions: medication.instructions,
+            iconColor: medication.iconColor,
+            iconName: medication.iconName,
+          };
 
-            const usedAmount = medication.dosagePerUnit
-              ? convertUnit(
-                  medication.form,
-                  dosageByTimeFloat,
-                  unit,
-                  medication.dosagePerUnit
-                )
-              : convertUnit(medication.form, dosageByTimeFloat, unit);
+          await medicationApi.createIntake(newIntake, token);
 
-            const resultQuantity = Math.max(
-              0,
-              medication.remainingQuantity -
-                Math.round(usedAmount * 1000) / 1000
+          // Обновляем количество лекарства, если принято
+          if (status === "taken") {
+            const { notificationSettings } = useSettingsStore.getState();
+            if (medication && medication.remainingQuantity > 0) {
+              const dosageByTimeFloat = parseFloat(dosageByTime);
+
+              const usedAmount = medication.dosagePerUnit
+                ? convertUnit(
+                    medication.form,
+                    dosageByTimeFloat,
+                    unit,
+                    medication.dosagePerUnit
+                  )
+                : convertUnit(medication.form, dosageByTimeFloat, unit);
+
+              const resultQuantity = Math.max(
+                0,
+                medication.remainingQuantity -
+                  Math.round(usedAmount * 1000) / 1000
+              );
+
+              if (
+                notificationSettings.lowStockRemindersEnabled &&
+                resultQuantity <= medication.lowStockThreshold
+              ) {
+                scheduleLowStockReminder(
+                  medication.name,
+                  resultQuantity,
+                  getUnitDisplayFromRaw(medication.unit, resultQuantity)
+                );
+              }
+
+              get().updateMedication(medicationId, {
+                remainingQuantity: resultQuantity,
+              });
+            }
+          }
+
+          set((state) => {
+            // Проверяем, есть ли уже запись о приеме для этого расписания и даты
+            const existingIntakeIndex = state.intakes.findIndex(
+              (intake) =>
+                intake.scheduleId === scheduleId &&
+                intake.scheduledDate === date &&
+                intake.scheduledTime === time
             );
 
-            if (
-              notificationSettings.lowStockRemindersEnabled &&
-              resultQuantity <= medication.lowStockThreshold
-            ) {
-              scheduleLowStockReminder(
-                medication.name,
-                resultQuantity,
-                getUnitDisplayFromRaw(medication.unit, resultQuantity)
-              );
+            if (existingIntakeIndex >= 0) {
+              // Обновляем существующую запись
+              const updatedIntakes = [...state.intakes];
+              updatedIntakes[existingIntakeIndex] = {
+                ...updatedIntakes[existingIntakeIndex],
+                status,
+                takenAt: status === "taken" ? timestamp : undefined,
+              };
+              return { intakes: updatedIntakes };
+            } else {
+              // Добавляем новую запись
+              return { intakes: [...state.intakes, newIntake] };
             }
-
-            get().updateMedication(medicationId, {
-              remainingQuantity: resultQuantity,
-            });
-          }
+          });
+        } catch (error) {
+          console.error("Failed to record intake", error);
+          throw error;
         }
-
-        set((state) => {
-          // Проверяем, есть ли уже запись о приеме для этого расписания и даты
-          const existingIntakeIndex = state.intakes.findIndex(
-            (intake) =>
-              intake.scheduleId === scheduleId &&
-              intake.scheduledDate === date &&
-              intake.scheduledTime === time
-          );
-
-          if (existingIntakeIndex >= 0) {
-            // Обновляем существующую запись
-            const updatedIntakes = [...state.intakes];
-            updatedIntakes[existingIntakeIndex] = {
-              ...updatedIntakes[existingIntakeIndex],
-              status,
-              takenAt: status === "taken" ? timestamp : undefined,
-            };
-            return { intakes: updatedIntakes };
-          } else {
-            // Добавляем новую запись
-            return { intakes: [...state.intakes, newIntake] };
-          }
-        });
       },
 
       addDraftSchedule: (draftSchedule: MedicationSchedule) => {
