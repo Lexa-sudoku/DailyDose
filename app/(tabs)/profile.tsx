@@ -25,7 +25,7 @@ import { translations } from "@/constants/translations";
 import { ProfilePhoto } from "@/components/ProfilePhoto";
 
 export default function ProfileScreen() {
-  const { user, logout, updatePhoto } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { getMedicationStats } = useMedicationStore();
 
   const stats = getMedicationStats();
@@ -33,10 +33,6 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     logout();
     router.replace("/(auth)/login");
-  };
-
-  const handlePhotoSelected = (uri: string) => {
-    updatePhoto(uri);
   };
 
   const navigateToEditProfile = () => {
@@ -79,7 +75,7 @@ export default function ProfileScreen() {
         <View style={styles.profileHeader}>
           <ProfilePhoto
             photoUrl={user?.photoUrl}
-            onPhotoSelected={handlePhotoSelected}
+            onPhotoSelected={() => {}}
             size={80}
             editable={false}
           />

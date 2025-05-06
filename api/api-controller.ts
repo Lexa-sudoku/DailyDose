@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = "http://147.45.185.112:8000";
 
 interface ApiRequestOptions {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

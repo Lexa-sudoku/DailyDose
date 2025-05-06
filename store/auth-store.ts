@@ -3,6 +3,10 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authApi } from "@/api/auth-api";
 import { User } from "@/types";
+import { useMedicationStore } from "./medication-store";
+import { useSettingsStore } from "./settings-store";
+import { useNotificationStore } from "./notification-store";
+import { cancelAllNotifications } from "@/utils/notification-utils";
 
 interface AuthState {
   user: User | null;
@@ -105,8 +109,32 @@ export const useAuthStore = create<AuthState>()(
             await authApi.logout(token);
           }
         } finally {
-          await AsyncStorage.removeItem("auth_token");
+          cancelAllNotifications();
+          await AsyncStorage.multiRemove([
+            "auth_token",
+            "auth-storage",
+            "medication-storage",
+            "settings-storage",
+            "notification-storage",
+          ]);
           set({ user: null, isAuthenticated: false });
+          useMedicationStore.setState({
+            medications: [],
+            schedules: [],
+            intakes: [],
+            draftSchedules: {},
+          });
+          useSettingsStore.setState({
+            notificationSettings: {
+              id: "",
+              medicationRemindersEnabled: true,
+              minutesBeforeScheduledTime: 15,
+              lowStockRemindersEnabled: true,
+            },
+          });
+          useNotificationStore.setState({
+            notifications: {}
+          })
         }
       },
     }),

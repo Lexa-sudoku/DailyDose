@@ -16,6 +16,7 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { useAuthStore } from "@/store/auth-store";
 import { translations } from "@/constants/translations";
+import { useSettingsStore } from "@/store/settings-store";
 
 export default function SignupScreen() {
   const [name, setName] = useState("");
@@ -45,7 +46,7 @@ export default function SignupScreen() {
 
     if (!email) {
       newErrors.email = translations.required;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email)) {
       newErrors.email = translations.invalidEmail;
     }
 
@@ -70,7 +71,8 @@ export default function SignupScreen() {
 
     try {
       await signup(Date.now().toString(), name, email, password);
-      router.replace("/(tabs)/calendar");
+      useSettingsStore.getState().setDefaultSettings();
+      router.replace("/");
     } catch (error) {
       console.error("Signup error:", error);
     }

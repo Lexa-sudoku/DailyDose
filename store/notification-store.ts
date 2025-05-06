@@ -24,6 +24,7 @@ export const useNotificationStore = create<NotificationStore>()(
           },
         })),
 
+      // удаляет запись вместе с scheduleId
       clearNotifications: (scheduleId) =>
         set((state) => {
           const updated = { ...state.notifications };
@@ -35,6 +36,7 @@ export const useNotificationStore = create<NotificationStore>()(
         return get().notifications[scheduleId] || [];
       },
 
+      // оставляет все scheduleId в notifications
       clearAllNotifications: () => {
         set((state) => {
           const updatedNotifications = Object.keys(state.notifications).reduce(
@@ -50,7 +52,7 @@ export const useNotificationStore = create<NotificationStore>()(
       },
     }),
     {
-      name: "onboarding-storage",
+      name: "notification-storage",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

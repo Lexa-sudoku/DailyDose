@@ -79,7 +79,7 @@ export default function EditScheduleScreen() {
   const { getNotifications, setNotifications } = useNotificationStore();
 
   const { notificationSettings } = useSettingsStore();
-  const minutesBefore = notificationSettings.minutesBeforeSheduledTime;
+  const minutesBefore = notificationSettings.minutesBeforeScheduledTime;
 
   const handleSave = async () => {
     if (!validateForm()) return;

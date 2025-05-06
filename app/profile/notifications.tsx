@@ -30,7 +30,7 @@ export default function NotificationsScreen() {
       clearAllNotifications();
     } else {
       rescheduleAllCourseNotifications(
-        notificationSettings.minutesBeforeSheduledTime
+        notificationSettings.minutesBeforeScheduledTime
       );
     }
   };
@@ -43,7 +43,7 @@ export default function NotificationsScreen() {
 
   const updateReminderTime = (minutes: number) => {
     updateNotificationSettings({
-      minutesBeforeSheduledTime: minutes,
+      minutesBeforeScheduledTime: minutes,
     });
     rescheduleAllCourseNotifications(minutes);
   };
@@ -53,7 +53,6 @@ export default function NotificationsScreen() {
     try {
       const token = await registerForPushNotificationsAsync();
       if (token) {
-        // В реальном приложении здесь был бы код для отправки токена на сервер
         console.warn("Expo push token:", token);
       }
     } catch (error) {
@@ -104,7 +103,7 @@ export default function NotificationsScreen() {
                 {translations.reminderTime}
               </Text>
               <Text style={styles.settingDescription}>
-                {notificationSettings.minutesBeforeSheduledTime}{" "}
+                {notificationSettings.minutesBeforeScheduledTime}{" "}
                 {translations.minutesBefore}
               </Text>
             </View>
@@ -113,7 +112,7 @@ export default function NotificationsScreen() {
                 title="5"
                 onPress={() => updateReminderTime(5)}
                 variant={
-                  notificationSettings.minutesBeforeSheduledTime === 5
+                  notificationSettings.minutesBeforeScheduledTime === 5
                     ? "primary"
                     : "outline"
                 }
@@ -124,7 +123,7 @@ export default function NotificationsScreen() {
                 title="15"
                 onPress={() => updateReminderTime(15)}
                 variant={
-                  notificationSettings.minutesBeforeSheduledTime === 15
+                  notificationSettings.minutesBeforeScheduledTime === 15
                     ? "primary"
                     : "outline"
                 }
@@ -135,7 +134,7 @@ export default function NotificationsScreen() {
                 title="30"
                 onPress={() => updateReminderTime(30)}
                 variant={
-                  notificationSettings.minutesBeforeSheduledTime === 30
+                  notificationSettings.minutesBeforeScheduledTime === 30
                     ? "primary"
                     : "outline"
                 }

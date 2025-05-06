@@ -194,7 +194,7 @@ export const useMedicationStore = create<MedicationState>()(
         }
       },
 
-      deleteMedication: async (id, keepHistory = false) => {
+      deleteMedication: async (id, keepHistory = true) => {
         try {
           const token = await AsyncStorage.getItem("auth_token");
           if (!token) throw new Error("Not authenticated");
@@ -303,7 +303,7 @@ export const useMedicationStore = create<MedicationState>()(
         }
       },
 
-      deleteSchedule: async (id, keepHistory = false) => {
+      deleteSchedule: async (id, keepHistory = true) => {
         try {
           const token = await AsyncStorage.getItem("auth_token");
           if (!token) throw new Error("Not authenticated");
@@ -817,7 +817,6 @@ export const useMedicationStore = create<MedicationState>()(
     }),
     {
       name: "medication-storage",
-      // version: 1, // Меняем версию, чтобы сбросить state
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

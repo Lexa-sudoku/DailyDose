@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
     if (!email) {
       newErrors.email = translations.required;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email)) {
       newErrors.email = translations.invalidEmail;
     }
 
@@ -50,7 +50,7 @@ export default function LoginScreen() {
 
     try {
       await login(email, password);
-      router.replace("/(tabs)/calendar");
+      router.replace("/");
     } catch (error) {
       console.error("Login error:", error);
     }

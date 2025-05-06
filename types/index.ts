@@ -124,7 +124,7 @@ export interface MedicationStats {
 export interface NotificationSettings {
   id: string;
   medicationRemindersEnabled: boolean;
-  minutesBeforeSheduledTime: number;
+  minutesBeforeScheduledTime: number;
   lowStockRemindersEnabled: boolean;
 }
 

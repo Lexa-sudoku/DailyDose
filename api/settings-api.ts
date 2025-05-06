@@ -4,8 +4,8 @@ import { apiRequest } from "./api-controller";
 export const notificationApi = {
   async getNotificationSettings(
     authToken: string
-  ): Promise<NotificationSettings> {
-    return apiRequest<NotificationSettings>("/api/notifications/", {
+  ): Promise<NotificationSettings[]> {
+    return apiRequest<NotificationSettings[]>("/api/notifications/", {
       method: "GET",
       headers: {
         Authorization: `Token ${authToken}`,

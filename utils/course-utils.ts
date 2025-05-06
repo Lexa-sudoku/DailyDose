@@ -1,4 +1,4 @@
-import { FrequencyType } from "@/types";
+import { FrequencyType, MedicationSchedule } from "@/types";
 import { addDays, eachDayOfInterval, isBefore, parseISO } from "date-fns";
 
 export function getCourseActiveDates(
@@ -36,4 +36,20 @@ export function getCourseActiveDates(
     default:
       return [];
   }
+}
+
+export function getActiveScheduleIds(
+  schedules: MedicationSchedule[]
+): string[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return schedules
+    .filter((schedule) => {
+      if (!schedule.endDate) return false;
+      const endDate = new Date(schedule.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      return endDate >= today;
+    })
+    .map((schedule) => schedule.id);
 }

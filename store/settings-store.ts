@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NotificationSettings } from "@/types";
 import { notificationApi } from "@/api/settings-api";
+import { useAuthStore } from "@/store/auth-store";
 
 interface SettingsState {
   notificationSettings: NotificationSettings;
@@ -13,14 +14,17 @@ interface SettingsState {
 
 const DEFAULT_NOTIFICATION_SETTINGS: Omit<NotificationSettings, "id"> = {
   medicationRemindersEnabled: true,
-  minutesBeforeSheduledTime: 15,
+  minutesBeforeScheduledTime: 15,
   lowStockRemindersEnabled: true,
 };
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      notificationSettings: { id: "", ...DEFAULT_NOTIFICATION_SETTINGS },
+      notificationSettings: {
+        id: "",
+        ...DEFAULT_NOTIFICATION_SETTINGS,
+      },
 
       setDefaultSettings: async () => {
         try {
@@ -43,7 +47,7 @@ export const useSettingsStore = create<SettingsState>()(
           if (!token) throw new Error("Not authenticated");
 
           const settings = await notificationApi.getNotificationSettings(token);
-          set({ notificationSettings: settings });
+          set({ notificationSettings: settings[0] });
         } catch (error) {
           console.error("Failed to load notification settings", error);
         }
@@ -54,15 +58,19 @@ export const useSettingsStore = create<SettingsState>()(
           const token = await AsyncStorage.getItem("auth_token");
           if (!token) throw new Error("Not authenticated");
 
-          const currentSettings = get().notificationSettings;
+          const currentSettingsId = useAuthStore.getState().user!.id;
           const updatedSettings =
             await notificationApi.updateNotificationSettings(
-              currentSettings.id,
+              currentSettingsId,
               settings,
               token
             );
-          set({ notificationSettings: updatedSettings });
-        } catch {}
+          set({
+            notificationSettings: updatedSettings,
+          });
+        } catch (error) {
+          console.error("Failed to update notification settings", error);
+        }
       },
     }),
     {

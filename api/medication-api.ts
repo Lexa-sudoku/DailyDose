@@ -62,13 +62,17 @@ export const medicationApi = {
     schedule: MedicationSchedule,
     authToken: string
   ): Promise<MedicationSchedule> {
-    return apiRequest<MedicationSchedule>("/api/schedules/", {
-      method: "POST",
-      body: schedule,
-      headers: {
-        Authorization: `Token ${authToken}`,
-      },
-    });
+    try {
+      return apiRequest<MedicationSchedule>("/api/schedules/", {
+        method: "POST",
+        body: schedule,
+        headers: {
+          Authorization: `Token ${authToken}`,
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
   },
 
   async updateSchedule(

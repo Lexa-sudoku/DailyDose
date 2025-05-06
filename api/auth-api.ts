@@ -1,5 +1,5 @@
 import { User } from "@/types";
-import { apiRequest } from "./api-controller";
+import { ApiError, apiRequest } from "./api-controller";
 
 export interface AuthToken {
   auth_token: string;
@@ -13,11 +13,20 @@ export const authApi = {
     password: string;
   }): Promise<User> {
     try {
+      console.log("API Request:", {
+        url: '/api/auth/users/',
+        data: { ...userData, password: '••••••' } // Не логируем реальный пароль
+      });
       return await apiRequest<User>("/api/auth/users/", {
         method: "POST",
         body: userData,
       });
     } catch (error) {
+      console.error("API Error:", {
+        url: '/api/auth/users/',
+        status: error instanceof ApiError ? error.status : null,
+        details: error instanceof ApiError ? error.details : null
+      });
       throw error;
     }
   },
