@@ -18,7 +18,8 @@
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
-      "package": "com.venefjka.dailydose"
+      "package": "com.venefjka.dailydose",
+      "usesCleartextTraffic": true
     },
     "plugins": [
       "expo-router",
