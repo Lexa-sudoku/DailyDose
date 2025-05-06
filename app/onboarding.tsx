@@ -12,11 +12,11 @@ import {
 import { colors } from "@/constants/colors";
 import { Button } from "@/components/Button";
 import { translations } from "@/constants/translations";
-import { useOnboardingStore } from "@/store/onboarding-store";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
-  const { completeOnboarding } = useOnboardingStore();
+  const { completeOnboarding } = useAuthStore();
 
   const steps = [
     {
@@ -51,7 +51,7 @@ export default function OnboardingScreen() {
 
   const handleComplete = () => {
     completeOnboarding();
-    router.replace("/(tabs)/calendar");
+    router.replace("/");
   };
 
   const handleSkip = () => {

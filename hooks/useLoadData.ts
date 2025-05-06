@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
-import { useOnboardingStore } from "@/store/onboarding-store";
 import { useMedicationStore } from "@/store/medication-store";
 import { useSettingsStore } from "@/store/settings-store";
 import {
@@ -13,8 +12,7 @@ import { getActiveScheduleIds } from "@/utils/course-utils";
 import { useNotificationStore } from "@/store/notification-store";
 
 export function LoadData() {
-  const { isAuthenticated } = useAuthStore();
-  const { hasCompletedOnboarding } = useOnboardingStore();
+  const { isAuthenticated, hasCompletedOnboarding } = useAuthStore();
 
   useEffect(() => {
     if (!isAuthenticated || !hasCompletedOnboarding) return;

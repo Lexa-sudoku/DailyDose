@@ -12,6 +12,9 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasCompletedOnboarding: boolean;
+  hydrated: boolean;
+
   login: (email: string, password: string) => Promise<void>;
   signup: (
     id: string,
@@ -25,6 +28,9 @@ interface AuthState {
     newPassword: string
   ) => Promise<void>;
   logout: () => void;
+  completeOnboarding: () => void;
+  resetOnboarding: () => void;
+  setHydrated: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -33,6 +39,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      hydrated: false,
+      hasCompletedOnboarding: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
@@ -133,10 +141,20 @@ export const useAuthStore = create<AuthState>()(
             },
           });
           useNotificationStore.setState({
-            notifications: {}
-          })
+            notifications: {},
+          });
         }
       },
+
+      completeOnboarding: () => {
+        set({ hasCompletedOnboarding: true });
+      },
+
+      resetOnboarding: () => {
+        set({ hasCompletedOnboarding: false });
+      },
+
+      setHydrated: () => set({ hydrated: true }),
     }),
     {
       name: "auth-storage",
@@ -144,7 +162,11 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
     }
   )
 );
