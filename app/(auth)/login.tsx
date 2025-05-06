@@ -16,6 +16,7 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { useAuthStore } from "@/store/auth-store";
 import { translations } from "@/constants/translations";
+import { ErrorModal } from "@/components/ErrorModal";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -112,6 +113,7 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <ErrorModal />
     </SafeAreaView>
   );
 }

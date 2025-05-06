@@ -12,6 +12,7 @@ import {
   rescheduleAllCourseNotifications,
 } from "@/utils/notification-utils";
 import { useNotificationStore } from "@/store/notification-store";
+import { ErrorModal } from "@/components/ErrorModal";
 
 export default function NotificationsScreen() {
   const { notificationSettings, updateNotificationSettings } =
@@ -185,6 +186,7 @@ export default function NotificationsScreen() {
           style={styles.permissionButton}
         />
       </ScrollView>
+    <ErrorModal />
     </SafeAreaView>
   );
 }

@@ -17,6 +17,7 @@ import { Button } from "@/components/Button";
 import { useAuthStore } from "@/store/auth-store";
 import { translations } from "@/constants/translations";
 import { useSettingsStore } from "@/store/settings-store";
+import { ErrorModal } from "@/components/ErrorModal";
 
 export default function SignupScreen() {
   const [name, setName] = useState("");
@@ -154,6 +155,7 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <ErrorModal />
     </SafeAreaView>
   );
 }

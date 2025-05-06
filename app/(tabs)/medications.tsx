@@ -12,6 +12,7 @@ import { useMedicationStore } from "@/store/medication-store";
 import { translations } from "@/constants/translations";
 import { EditMedicationModal } from "@/components/EditMedicationModal";
 import { Medication } from "@/types";
+import { ErrorModal } from "@/components/ErrorModal";
 
 export default function MedicationsScreen() {
   const { medications, getLowStockMedications } = useMedicationStore();
@@ -104,6 +105,7 @@ export default function MedicationsScreen() {
           medication={selectedMedication}
         />
       )}
+    <ErrorModal />
     </SafeAreaView>
   );
 }

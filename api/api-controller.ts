@@ -1,3 +1,5 @@
+import { useErrorStore } from "@/store/error-store";
+
 const BASE_URL = "http://147.45.185.112:8000";
 
 interface ApiRequestOptions {
@@ -52,11 +54,14 @@ export async function apiRequest<T>(
       } catch {
         errorData = { detail: response.statusText };
       }
-      throw new ApiError(
+      const RequestError = new ApiError(
         response.status,
         errorData.detail || "Request failed",
         errorData
       );
+
+      useErrorStore.getState().setError(RequestError);
+      throw RequestError;
     }
 
     // Для ответов без тела (например, 204)
@@ -67,8 +72,13 @@ export async function apiRequest<T>(
     return await response.json();
   } catch (error) {
     if (error instanceof ApiError) {
+      useErrorStore.getState().setError(error);
       throw error;
     }
-    throw new ApiError(0, "Network error", error);
+    const networkError = new ApiError(0, "Ошибка сети", {
+      non_field_errors: "Network error.",
+    });
+    useErrorStore.getState().setError(networkError);
+    throw networkError;
   }
 }

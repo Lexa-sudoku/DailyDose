@@ -12,6 +12,7 @@ import { formatDate, formatTime } from "@/utils/date-utils";
 import { translations } from "@/constants/translations";
 import { Button } from "@/components/Button";
 import { addDays, format } from "date-fns";
+import { ErrorModal } from "@/components/ErrorModal";
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -170,6 +171,7 @@ export default function CalendarScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
       />
+      <ErrorModal />
     </SafeAreaView>
   );
 }
